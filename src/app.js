@@ -16,6 +16,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var DiamondNodeModel = LogicFlow.DiamondNodeModel;
   var PolylineEdge = LogicFlow.PolylineEdge;
   var PolylineEdgeModel = LogicFlow.PolylineEdgeModel;
+  var BezierEdge = LogicFlow.BezierEdge;
+  var BezierEdgeModel = LogicFlow.BezierEdgeModel;
 
   // ========== 初始化 LogicFlow ==========
   var container = document.querySelector('#graph');
@@ -25,7 +27,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     height: container.clientHeight || 600,
     grid: { size: 10, visible: true, type: 'dot', config: { color: '#e0e0e0', thickness: 1 } },
     keyboard: { enabled: true },
-    edgeType: 'custom-polyline',
+    edgeType: 'custom-bezier',
     stopScrollGraph: true,
     stopZoomGraph: false,
     adjustEdge: true,
@@ -327,8 +329,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'internal-storage', view: InternalStorageView, model: InternalStorageModel });
 
-  // ========== 注册自定义连线类型 ==========
-  class CustomPolylineModel extends PolylineEdgeModel {
+  // ========== 注册自定义连线类型（贝塞尔曲线） ==========
+  class CustomBezierModel extends BezierEdgeModel {
     getEdgeStyle() {
       var style = super.getEdgeStyle();
       var props = this.properties || {};
@@ -347,7 +349,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       return style;
     }
   }
-  lf.register({ type: 'custom-polyline', view: PolylineEdge, model: CustomPolylineModel });
+  lf.register({ type: 'custom-bezier', view: BezierEdge, model: CustomBezierModel });
 
   // 渲染空画布
   lf.render({ nodes: [], edges: [] });

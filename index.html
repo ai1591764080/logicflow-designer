@@ -191,7 +191,7 @@
   window.LogicFlow = LFConstructor;
 
   // 将节点/边基类挂载到 LogicFlow 对象
-  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','PolylineEdge','PolylineEdgeModel'];
+  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','PolylineEdge','PolylineEdgeModel','BezierEdge','BezierEdgeModel'];
   for (var i = 0; i < _keys.length; i++) {
     if (Core[_keys[i]]) {
       window.LogicFlow[_keys[i]] = Core[_keys[i]];
