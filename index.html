@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogicFlow 专业流程图设计器</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/core/lib/style/index.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/css/layui.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .main-container { flex: 1; display: flex; min-height: 0; }
+        .left-panel { width: 200px; background: #fff; border-right: 1px solid #e6e6e6; padding: 20px; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; position: relative; }
+        .left-panel.collapsed { width: 0; padding: 0; overflow: hidden; border-right: none; }
+        .panel-title { font-size: 16px; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; font-weight: bold; }
+        
+        .node-item { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 65px; margin-bottom: 10px;
+            border: 1px solid #d9d9d9; border-radius: 4px;
+            cursor: grab; background: #fff; transition: all 0.2s; user-select: none; 
+        }
+        .node-item:hover { border-color: #1e9fff; box-shadow: 0 2px 8px rgba(30,159,255,0.15); background: #f0f9ff; }
+        .node-item:hover .node-text { color: #1e9fff; }
+        .node-item:active { cursor: grabbing; }
+        
+        .node-shape { width: 26px; height: 26px; margin-bottom: 4px; }
+        .node-text { font-size: 12px; color: #333; transition: color 0.2s; }
+        
+        .shape-start { border-radius: 50%; border: 2px solid #52c41a; background: #d9f0d3; }
+        .shape-end { border-radius: 50%; border: 2px solid #f5222d; background: #ffd8d8; }
+        .shape-task { border-radius: 4px; border: 2px solid #1890ff; background: #e6f7ff; }
+        .shape-condition { width: 20px; height: 20px; transform: rotate(45deg); border: 2px solid #faad14; background: #fffbe6; margin-bottom: 10px; }
+        
+        .shape-base-rect { border-radius: 2px; border: 2px solid #666; background: #fff; }
+        .shape-oblong { border-radius: 4px; border: 2px solid #666; background: #fff; width: 36px; height: 18px; }
+        .shape-sharp-rect { border-radius: 0; border: 2px solid #666; background: #fff; width: 38px; height: 18px; }
+        .shape-round-rect { border-radius: 10px; border: 2px solid #666; background: #fff; width: 38px; height: 18px; }
+        .shape-document {
+            width: 34px; height: 22px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='22'%3E%3Cpath d='M1 1H33V15C27 9 23 9 17 15C11 21 7 21 1 15Z' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+            background-size: 100% 100%;
+        }
+        .shape-subprocess {
+            width: 34px; height: 20px; border: 2px solid #666; background: #fff;
+            position: relative;
+        }
+        .shape-subprocess::before, .shape-subprocess::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: #666;
+        }
+        .shape-subprocess::before { left: 5px; }
+        .shape-subprocess::after { right: 5px; }
+        .shape-internal-storage {
+            width: 34px; height: 20px; border: 2px solid #666; background: #fff;
+            position: relative;
+        }
+        .shape-internal-storage::before, .shape-internal-storage::after {
+            content: ''; position: absolute; background: #666;
+        }
+        .shape-internal-storage::before { top: 0; left: 0; right: 0; height: 2px; }
+        .shape-internal-storage::after { top: 0; left: 0; bottom: 0; width: 2px; }
+        .shape-base-circle { border-radius: 50%; border: 2px solid #666; background: #fff; }
+        .shape-base-diamond { width: 20px; height: 20px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin-bottom: 10px; }
+
+        .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; }
+        .right-panel { width: 260px; background: #fff; border-left: 1px solid #e6e6e6; padding: 20px; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; }
+        .right-panel.collapsed { width: 0; padding: 0; overflow: hidden; border-left: none; }
+        .right-panel .panel-title { font-size: 16px; color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; }
+        
+        /* 折叠按钮样式 */
+        .toggle-btn {
+            position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+            width: 16px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center;
+            background: #fff; border: 1px solid #e6e6e6; cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .toggle-btn:hover { background: #f0f9ff; border-color: #1e9fff; box-shadow: 0 0 6px rgba(30,159,255,0.2); }
+        .toggle-btn i { font-size: 12px; color: #999; }
+        .toggle-btn:hover i { color: #1e9fff; }
+        .left-toggle { right: -17px; border-radius: 0 4px 4px 0; border-left: none; }
+        .right-toggle { left: -17px; border-radius: 4px 0 0 4px; border-right: none; }
+        
+        .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
+        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
+        .empty-tip { color: #999; text-align: center; margin-top: 80px; font-size: 14px; }
+        .empty-tip i { font-size: 48px; color: #ddd; display: block; margin-bottom: 15px; }
+        .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: #e6e6e6; margin: 0 10px; vertical-align: middle; }
+        
+        #context-menu { display: none; position: absolute; z-index: 9999; background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 0; min-width: 120px; }
+        #context-menu .menu-item { padding: 8px 15px; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; }
+        #context-menu .menu-item:hover { background: #f2f2f2; color: #1e9fff; }
+        #context-menu .menu-item i { margin-right: 8px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<!-- 顶部工具栏 -->
+<div style="height: 50px; background: #fff; border-bottom: 1px solid #e6e6e6; padding: 0 15px; line-height: 50px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: center;">
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-undo" title="撤销 (Ctrl+Z)"><i class="layui-icon layui-icon-left"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-redo" title="重做 (Ctrl+Y)"><i class="layui-icon layui-icon-right"></i></button>
+    </div>
+    <span class="toolbar-divider"></span>
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-in" title="放大"><i class="layui-icon layui-icon-addition"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fit" title="适应画布"><i class="layui-icon layui-icon-senior"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-reset" title="重置缩放"><i class="layui-icon layui-icon-refresh"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fullscreen" title="全屏模式"><i class="layui-icon layui-icon-screen-full"></i></button>
+    </div>
+    <span class="toolbar-divider"></span>
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-snapshot"><i class="layui-icon layui-icon-picture"></i> 导出图片</button>
+    </div>
+    <div class="layui-btn-group" style="margin-left: auto;">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-export"><i class="layui-icon layui-icon-export"></i> 导出 JSON</button>
+        <button class="layui-btn layui-btn-sm layui-btn-warm" id="btn-validate"><i class="layui-icon layui-icon-vercode"></i> 校验流程</button>
+        <button class="layui-btn layui-btn-sm" id="btn-save"><i class="layui-icon layui-icon-ok"></i> 保存发布</button>
+    </div>
+</div>
+
+<!-- 主体三栏布局 -->
+<div class="main-container">
+    <!-- 左侧节点面板 -->
+    <div class="left-panel" id="left-panel">
+        <div class="panel-title">流程节点</div>
+        <div class="node-item" draggable="true" data-type="start-node"><div class="node-shape shape-start"></div><span class="node-text">开始节点</span></div>
+        <div class="node-item" draggable="true" data-type="end-node"><div class="node-shape shape-end"></div><span class="node-text">结束节点</span></div>
+        <div class="node-item" draggable="true" data-type="user-task"><div class="node-shape shape-task"></div><span class="node-text">审批任务</span></div>
+        <div class="node-item" draggable="true" data-type="condition-node"><div class="node-shape shape-condition"></div><span class="node-text">条件判断</span></div>
+        
+        <div class="panel-title">基础图形</div>
+        <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div><span class="node-text">矩形</span></div>
+        <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div><span class="node-text">长方形</span></div>
+        <div class="node-item" draggable="true" data-type="sharp-rect"><div class="node-shape shape-sharp-rect"></div><span class="node-text">直角长方形</span></div>
+        <div class="node-item" draggable="true" data-type="round-rect"><div class="node-shape shape-round-rect"></div><span class="node-text">圆角长方形</span></div>
+        <div class="node-item" draggable="true" data-type="document"><div class="node-shape shape-document"></div><span class="node-text">文档</span></div>
+        <div class="node-item" draggable="true" data-type="subprocess"><div class="node-shape shape-subprocess"></div><span class="node-text">子流程</span></div>
+        <div class="node-item" draggable="true" data-type="internal-storage"><div class="node-shape shape-internal-storage"></div><span class="node-text">内部存储</span></div>
+        <div class="node-item" draggable="true" data-type="circle"><div class="node-shape shape-base-circle"></div><span class="node-text">圆形</span></div>
+        <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div><span class="node-text">菱形</span></div>
+        <button id="toggle-left" class="toggle-btn left-toggle" title="收起/展开左侧面板"><i class="layui-icon layui-icon-left"></i></button>
+    </div>
+
+    <!-- 中间画布 -->
+    <div class="center-panel">
+        <div id="graph" style="width: 100%; height: 100%;"></div>
+    </div>
+
+    <!-- 右侧属性面板 -->
+    <div class="right-panel" id="right-panel">
+        <div class="panel-title">属性配置</div>
+        <div id="props-content">
+            <div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>
+        </div>
+        <button id="toggle-right" class="toggle-btn right-toggle" title="收起/展开右侧面板"><i class="layui-icon layui-icon-right"></i></button>
+    </div>
+</div>
+
+<!-- 右键菜单 -->
+<div id="context-menu">
+    <div class="menu-item" id="menu-edit"><i class="layui-icon layui-icon-edit"></i> 编辑属性</div>
+    <div class="menu-item" id="menu-delete"><i class="layui-icon layui-icon-delete"></i> 删除</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/layui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@logicflow/core@2.2.3/dist/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<!-- LogicFlow 2.x 全局变量兼容层 -->
+<script>
+  // LogicFlow 2.x UMD 包导出到 window.Core
+  // 需要将构造函数和节点基类挂载到 window.LogicFlow 供 app.js 使用
+  var LFConstructor = Core.default || Core.LogicFlow;
+  window.LogicFlow = LFConstructor;
+
+  // 将节点/边基类挂载到 LogicFlow 对象
+  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','PolylineEdge','PolylineEdgeModel'];
+  for (var i = 0; i < _keys.length; i++) {
+    if (Core[_keys[i]]) {
+      window.LogicFlow[_keys[i]] = Core[_keys[i]];
+    }
+  }
+
+  // 暴露 h() 函数用于创建 SVG 元素（自定义视图需要）
+  window.h = Core.h;
+</script>
+
+<!-- 打包的业务逻辑 -->
+<script src="dist/app.js"></script>
+
+</body>
+</html>
