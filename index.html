@@ -11,7 +11,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
         .main-container { flex: 1; display: flex; min-height: 0; }
-        .left-panel { width: 200px; background: #fff; border-right: 1px solid #e6e6e6; padding: 20px; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; position: relative; }
+        .left-panel { width: 280px; background: #fff; border-right: 1px solid #e6e6e6; padding: 20px; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; position: relative; }
         .left-panel.collapsed { width: 0; padding: 0; overflow: hidden; border-right: none; }
         .panel-title { font-size: 16px; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; font-weight: bold; }
         
@@ -24,6 +24,22 @@
         .node-item:hover { border-color: #1e9fff; box-shadow: 0 2px 8px rgba(30,159,255,0.15); background: #f0f9ff; }
         .node-item:hover .node-text { color: #1e9fff; }
         .node-item:active { cursor: grabbing; }
+        
+        /* 基础图形：两列网格布局，无边框无文字 */
+        .base-shapes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .base-shapes-grid .node-item {
+            height: 50px; margin-bottom: 0;
+            border: none; background: transparent;
+        }
+        .base-shapes-grid .node-item:hover {
+            border: none; box-shadow: none; background: #f0f9ff; border-radius: 4px;
+        }
+        .base-shapes-grid .node-text { display: none; }
+        .base-shapes-grid .node-shape { margin-bottom: 0; }
         
         .node-shape { width: 26px; height: 26px; margin-bottom: 4px; }
         .node-text { font-size: 12px; color: #333; transition: color 0.2s; }
@@ -131,15 +147,17 @@
         <div class="node-item" draggable="true" data-type="condition-node"><div class="node-shape shape-condition"></div><span class="node-text">条件判断</span></div>
         
         <div class="panel-title">基础图形</div>
-        <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div><span class="node-text">矩形</span></div>
-        <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div><span class="node-text">长方形</span></div>
-        <div class="node-item" draggable="true" data-type="sharp-rect"><div class="node-shape shape-sharp-rect"></div><span class="node-text">直角长方形</span></div>
-        <div class="node-item" draggable="true" data-type="round-rect"><div class="node-shape shape-round-rect"></div><span class="node-text">圆角长方形</span></div>
-        <div class="node-item" draggable="true" data-type="document"><div class="node-shape shape-document"></div><span class="node-text">文档</span></div>
-        <div class="node-item" draggable="true" data-type="subprocess"><div class="node-shape shape-subprocess"></div><span class="node-text">子流程</span></div>
-        <div class="node-item" draggable="true" data-type="internal-storage"><div class="node-shape shape-internal-storage"></div><span class="node-text">内部存储</span></div>
-        <div class="node-item" draggable="true" data-type="circle"><div class="node-shape shape-base-circle"></div><span class="node-text">圆形</span></div>
-        <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div><span class="node-text">菱形</span></div>
+        <div class="base-shapes-grid">
+            <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div></div>
+            <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div></div>
+            <div class="node-item" draggable="true" data-type="sharp-rect"><div class="node-shape shape-sharp-rect"></div></div>
+            <div class="node-item" draggable="true" data-type="round-rect"><div class="node-shape shape-round-rect"></div></div>
+            <div class="node-item" draggable="true" data-type="document"><div class="node-shape shape-document"></div></div>
+            <div class="node-item" draggable="true" data-type="subprocess"><div class="node-shape shape-subprocess"></div></div>
+            <div class="node-item" draggable="true" data-type="internal-storage"><div class="node-shape shape-internal-storage"></div></div>
+            <div class="node-item" draggable="true" data-type="circle"><div class="node-shape shape-base-circle"></div></div>
+            <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div></div>
+        </div>
         <button id="toggle-left" class="toggle-btn left-toggle" title="收起/展开左侧面板"><i class="layui-icon layui-icon-left"></i></button>
     </div>
 
