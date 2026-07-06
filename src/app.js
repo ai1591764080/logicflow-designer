@@ -29,6 +29,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     stopScrollGraph: true,
     stopZoomGraph: false,
     adjustEdge: true,
+    adjustEdgeStartAndEnd: true,
     allowRotate: true,
     allowResize: true,
   });
