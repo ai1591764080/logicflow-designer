@@ -29,6 +29,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     stopScrollGraph: true,
     stopZoomGraph: false,
     adjustEdge: true,
+    allowRotate: true,
+    allowResize: true,
   });
 
   // ========== 自定义节点样式工具函数 ==========
