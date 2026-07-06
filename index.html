@@ -21,7 +21,7 @@
             border: none; border-radius: 4px;
             cursor: grab; background: transparent; transition: all 0.2s; user-select: none; 
         }
-        .node-item:hover { box-shadow: 0 2px 8px rgba(30,159,255,0.15); background: #f0f9ff; }
+        .node-item:hover { background: transparent; }
         .node-item:hover .node-text { color: #1e9fff; }
         .node-item:active { cursor: grabbing; }
         
@@ -32,48 +32,48 @@
             gap: 10px;
         }
         .base-shapes-grid .node-item {
-            height: 50px; margin-bottom: 0;
+            height: 60px; margin-bottom: 0;
             border: none; background: transparent;
         }
         .base-shapes-grid .node-item:hover {
-            border: none; box-shadow: none; background: #f0f9ff; border-radius: 4px;
+            border: none; box-shadow: none; background: transparent; border-radius: 4px;
         }
         .base-shapes-grid .node-text { display: none; }
         .base-shapes-grid .node-shape { margin-bottom: 0; }
         
-        .node-shape { width: 26px; height: 26px; margin-bottom: 4px; }
+        .node-shape { width: 34px; height: 34px; margin-bottom: 4px; }
         .node-text { font-size: 12px; color: #333; transition: color 0.2s; }
         
         .shape-start { border-radius: 50%; border: 2px solid #52c41a; background: #d9f0d3; }
         .shape-end { border-radius: 50%; border: 2px solid #f5222d; background: #ffd8d8; }
         .shape-task { border-radius: 4px; border: 2px solid #1890ff; background: #e6f7ff; }
-        .shape-condition { width: 20px; height: 20px; transform: rotate(45deg); border: 2px solid #faad14; background: #fffbe6; margin-bottom: 10px; }
+        .shape-condition { width: 26px; height: 26px; transform: rotate(45deg); border: 2px solid #faad14; background: #fffbe6; margin-bottom: 10px; }
         
         .shape-base-rect { border-radius: 2px; border: 2px solid #666; background: #fff; }
-        .shape-oblong { border-radius: 4px; border: 2px solid #666; background: #fff; width: 36px; height: 18px; }
-        .shape-sharp-rect { border-radius: 0; border: 2px solid #666; background: #fff; width: 38px; height: 18px; }
-        .shape-round-rect { border-radius: 10px; border: 2px solid #666; background: #fff; width: 38px; height: 18px; }
+        .shape-oblong { border-radius: 4px; border: 2px solid #666; background: #fff; width: 44px; height: 22px; }
+        .shape-sharp-rect { border-radius: 0; border: 2px solid #666; background: #fff; width: 46px; height: 22px; }
+        .shape-round-rect { border-radius: 10px; border: 2px solid #666; background: #fff; width: 46px; height: 22px; }
         .shape-document {
-            width: 34px; height: 22px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='22'%3E%3Cpath d='M1 1H33V15C27 9 23 9 17 15C11 21 7 21 1 15Z' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+            width: 42px; height: 28px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='28'%3E%3Cpath d='M1 1H41V19C33 26 28 12 21 19C14 26 9 12 1 19Z' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
             background-size: 100% 100%;
         }
         .shape-subprocess {
-            width: 34px; height: 20px; border: 2px solid #666; background: #fff;
+            width: 42px; height: 26px; border: 2px solid #666; background: #fff;
             position: relative;
         }
         .shape-subprocess::before, .shape-subprocess::after {
             content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: #666;
         }
-        .shape-subprocess::before { left: 5px; }
-        .shape-subprocess::after { right: 5px; }
+        .shape-subprocess::before { left: 6px; }
+        .shape-subprocess::after { right: 6px; }
         .shape-internal-storage {
-            width: 34px; height: 20px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='20'%3E%3Crect x='1' y='1' width='32' height='18' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='1' y1='6' x2='33' y2='6' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='8' y1='1' x2='8' y2='19' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+            width: 42px; height: 26px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='26'%3E%3Crect x='1' y='1' width='40' height='24' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='1' y1='8' x2='41' y2='8' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='10' y1='1' x2='10' y2='25' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
             background-size: 100% 100%;
         }
         .shape-base-circle { border-radius: 50%; border: 2px solid #666; background: #fff; }
-        .shape-base-diamond { width: 20px; height: 20px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin-bottom: 10px; }
+        .shape-base-diamond { width: 26px; height: 26px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin-bottom: 10px; }
 
         .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; }
         .right-panel { width: 260px; background: #fff; border-left: 1px solid #e6e6e6; padding: 20px; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; }
