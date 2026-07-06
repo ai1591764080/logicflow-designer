@@ -29,9 +29,21 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     stopScrollGraph: true,
     stopZoomGraph: false,
     adjustEdge: true,
+    adjustEdgeMiddle: true,
     adjustEdgeStartAndEnd: true,
     allowRotate: true,
     allowResize: true,
+  });
+
+  // 设置边调整点样式，使其更醒目
+  lf.setTheme({
+    edgeAdjust: {
+      r: 6,
+      fill: '#1e9fff',
+      stroke: '#fff',
+      strokeWidth: 2,
+      hover: { r: 8, fill: '#1890ff' }
+    }
   });
 
   // ========== 自定义节点样式工具函数 ==========
