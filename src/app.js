@@ -18,6 +18,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var PolylineEdgeModel = LogicFlow.PolylineEdgeModel;
   var BezierEdge = LogicFlow.BezierEdge;
   var BezierEdgeModel = LogicFlow.BezierEdgeModel;
+  var LineEdge = LogicFlow.LineEdge;
+  var LineEdgeModel = LogicFlow.LineEdgeModel;
 
   // ========== 初始化 LogicFlow ==========
   var container = document.querySelector('#graph');
@@ -329,27 +331,42 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'internal-storage', view: InternalStorageView, model: InternalStorageModel });
 
-  // ========== 注册自定义连线类型（贝塞尔曲线） ==========
-  class CustomBezierModel extends BezierEdgeModel {
-    getEdgeStyle() {
-      var style = super.getEdgeStyle();
-      var props = this.properties || {};
-      if (props.stroke) style.stroke = props.stroke;
-      if (props.strokeWidth) style.strokeWidth = parseInt(props.strokeWidth);
-      if (props.strokeDasharray) style.strokeDasharray = props.strokeDasharray;
-      return style;
-    }
-    getTextStyle() {
-      var style = super.getTextStyle();
-      var props = this.properties || {};
-      var edgeStyle = this.getEdgeStyle();
-      style.fontSize = 12;
-      style.color = props.textColor || edgeStyle.stroke || '#666';
-      style.background = { fill: '#fff', stroke: '#e6e6e6', radius: 2 };
-      return style;
-    }
+  // ========== 注册自定义连线类型 ==========
+
+  // 公共边样式混入
+  function edgeStyleMixin(BaseModel) {
+    return class extends BaseModel {
+      getEdgeStyle() {
+        var style = super.getEdgeStyle();
+        var props = this.properties || {};
+        if (props.stroke) style.stroke = props.stroke;
+        if (props.strokeWidth) style.strokeWidth = parseInt(props.strokeWidth);
+        if (props.strokeDasharray) style.strokeDasharray = props.strokeDasharray;
+        return style;
+      }
+      getTextStyle() {
+        var style = super.getTextStyle();
+        var props = this.properties || {};
+        var edgeStyle = this.getEdgeStyle();
+        style.fontSize = 12;
+        style.color = props.textColor || edgeStyle.stroke || '#666';
+        style.background = { fill: '#fff', stroke: '#e6e6e6', radius: 2 };
+        return style;
+      }
+    };
   }
+
+  // 贝塞尔曲线
+  class CustomBezierModel extends edgeStyleMixin(BezierEdgeModel) {}
   lf.register({ type: 'custom-bezier', view: BezierEdge, model: CustomBezierModel });
+
+  // 直角折线
+  class CustomPolylineModel extends edgeStyleMixin(PolylineEdgeModel) {}
+  lf.register({ type: 'custom-polyline', view: PolylineEdge, model: CustomPolylineModel });
+
+  // 直线
+  class CustomLineModel extends edgeStyleMixin(LineEdgeModel) {}
+  lf.register({ type: 'custom-line', view: LineEdge, model: CustomLineModel });
 
   // 渲染空画布
   lf.render({ nodes: [], edges: [] });
@@ -561,6 +578,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   document.getElementById('btn-fit').onclick = function () { lf.fitView(80); };
   document.getElementById('btn-reset').onclick = function () { lf.resetZoom(); };
   document.getElementById('btn-fullscreen').onclick = function () { document.body.classList.toggle('fullscreen-mode'); lf.resize(); };
+
+  // 边类型切换
+  document.getElementById('edge-type-select').onchange = function () {
+    lf.setDefaultEdgeType(this.value);
+  };
 
   // 左右面板折叠
   var leftPanel = document.getElementById('left-panel');

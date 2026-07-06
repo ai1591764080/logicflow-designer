@@ -125,6 +125,14 @@
     <div class="layui-btn-group">
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-snapshot"><i class="layui-icon layui-icon-picture"></i> 导出图片</button>
     </div>
+    <span class="toolbar-divider"></span>
+    <div class="layui-btn-group">
+        <select id="edge-type-select" style="height: 30px; border: 1px solid #e6e6e6; border-radius: 3px; padding: 0 8px; font-size: 13px; color: #333; background: #fff; cursor: pointer; outline: none;">
+            <option value="custom-bezier" selected>曲线</option>
+            <option value="custom-polyline">折线</option>
+            <option value="custom-line">直线</option>
+        </select>
+    </div>
     <div class="layui-btn-group" style="margin-left: auto;">
         <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-export"><i class="layui-icon layui-icon-export"></i> 导出 JSON</button>
         <button class="layui-btn layui-btn-sm layui-btn-warm" id="btn-validate"><i class="layui-icon layui-icon-vercode"></i> 校验流程</button>
@@ -191,7 +199,7 @@
   window.LogicFlow = LFConstructor;
 
   // 将节点/边基类挂载到 LogicFlow 对象
-  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','PolylineEdge','PolylineEdgeModel','BezierEdge','BezierEdgeModel'];
+  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','LineEdge','LineEdgeModel','PolylineEdge','PolylineEdgeModel','BezierEdge','BezierEdgeModel'];
   for (var i = 0; i < _keys.length; i++) {
     if (Core[_keys[i]]) {
       window.LogicFlow[_keys[i]] = Core[_keys[i]];
