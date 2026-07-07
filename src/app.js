@@ -353,6 +353,19 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         style.background = { fill: '#fff', stroke: '#e6e6e6', radius: 2 };
         return style;
       }
+      getTextPosition() {
+        var props = this.properties || {};
+        var pos = props.textPosition;
+        if (!pos || pos === 'middle') return super.getTextPosition();
+        var sp = this.startPoint;
+        var ep = this.endPoint;
+        if (pos === 'start') {
+          return { x: sp.x + (ep.x - sp.x) * 0.15, y: sp.y + (ep.y - sp.y) * 0.15 };
+        } else if (pos === 'end') {
+          return { x: sp.x + (ep.x - sp.x) * 0.85, y: sp.y + (ep.y - sp.y) * 0.85 };
+        }
+        return super.getTextPosition();
+      }
     };
   }
 
@@ -502,6 +515,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             '<option value="5,5"' + (props.strokeDasharray === '5,5' ? ' selected' : '') + '>虚线</option>' +
           '</select>' +
         '</div></div>' +
+        '<div class="layui-form-item"><label class="layui-form-label">文本位置</label><div class="layui-input-block">' +
+          '<select name="textPosition">' +
+            '<option value="start"' + (props.textPosition === 'start' ? ' selected' : '') + '>起点附近</option>' +
+            '<option value="middle"' + (!props.textPosition || props.textPosition === 'middle' ? ' selected' : '') + '>中间位置</option>' +
+            '<option value="end"' + (props.textPosition === 'end' ? ' selected' : '') + '>终点附近</option>' +
+          '</select>' +
+        '</div></div>' +
         '<div class="layui-form-item" style="margin-top: 30px;"><div class="layui-input-block">' +
           '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
           '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除</button>' +
@@ -555,7 +575,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc });
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
-      lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray });
+      lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray, textPosition: f.textPosition });
     }
     layer.msg('保存成功', { icon: 1, time: 1000 });
     return false;
