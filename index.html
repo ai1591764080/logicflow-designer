@@ -157,7 +157,29 @@
         .module-selector select:hover { border-color: #c0c6d0; }
         .module-selector select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
 
-        .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: #e6e6e6; margin: 0 10px; vertical-align: middle; }
+        .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: linear-gradient(to bottom, transparent, #dce1e8, transparent); margin: 0 8px; vertical-align: middle; }
+        /* 工具栏按钮优化 */
+        .toolbar-area .layui-btn { border-radius: 6px; font-size: 13px; transition: all 0.2s; border-color: #e0e4ea; }
+        .toolbar-area .layui-btn-primary { background: #fff; color: #5a6170; }
+        .toolbar-area .layui-btn-primary:hover { background: #f0f7ff; border-color: #1e9fff; color: #1e9fff; }
+        .toolbar-area .layui-btn i { font-size: 15px; }
+        .toolbar-area .layui-btn-sm { height: 32px; line-height: 32px; padding: 0 10px; }
+        .toolbar-area .layui-btn-sm + .layui-btn-sm { margin-left: 2px; }
+        /* 右侧操作按钮 */
+        .toolbar-area #btn-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
+        .toolbar-area #btn-export:hover { background: #1890ff; color: #fff; }
+        .toolbar-area #btn-validate { background: #fff7e6; border-color: #ffd591; color: #fa8c16; }
+        .toolbar-area #btn-validate:hover { background: #fa8c16; color: #fff; }
+        .toolbar-area #btn-save { background: #1e9fff; border-color: #1e9fff; color: #fff; }
+        .toolbar-area #btn-save:hover { background: #1890ff; border-color: #1890ff; }
+        /* 边类型下拉框 */
+        .toolbar-area #edge-type-select { height: 32px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 10px; font-size: 13px; color: #5a6170; background: #fff; cursor: pointer; outline: none; transition: all 0.2s; }
+        .toolbar-area #edge-type-select:hover { border-color: #1e9fff; }
+        .toolbar-area #edge-type-select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
+        /* 模式切换按钮 */
+        .toolbar-area #btn-mode-toggle { border-radius: 6px; font-size: 13px; height: 32px; line-height: 32px; transition: all 0.2s; }
+        .toolbar-area #btn-mode-toggle.layui-btn-warm { background: #fff7e6; border-color: #ffd591; color: #fa8c16; }
+        .toolbar-area #btn-mode-toggle.layui-btn-warm:hover { background: #fa8c16; color: #fff; }
         
         #context-menu { display: none; position: absolute; z-index: 9999; background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 0; min-width: 120px; }
         #context-menu .menu-item { padding: 8px 15px; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; }
@@ -168,7 +190,7 @@
 <body>
 
 <!-- 顶部工具栏 -->
-<div style="height: 50px; background: #fff; border-bottom: 1px solid #e6e6e6; padding: 0 15px; line-height: 50px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: center;">
+<div class="toolbar-area" style="height: 50px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 16px; line-height: 50px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center;">
     <div class="layui-btn-group">
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-undo" title="撤销 (Ctrl+Z)"><i class="layui-icon layui-icon-left"></i></button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-redo" title="重做 (Ctrl+Y)"><i class="layui-icon layui-icon-right"></i></button>
