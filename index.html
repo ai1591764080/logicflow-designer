@@ -173,7 +173,7 @@
         .toolbar-area #btn-save { background: #1e9fff; border-color: #1e9fff; color: #fff; }
         .toolbar-area #btn-save:hover { background: #1890ff; border-color: #1890ff; }
         /* 边类型下拉框 */
-        .toolbar-area .toolbar-select, .toolbar-area #edge-type-select { height: 32px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 12px; font-size: 13px; color: #5a6170; background: #fff; cursor: pointer; outline: none; transition: all 0.2s; min-width: 100px; }
+        .toolbar-area .toolbar-select, .toolbar-area #edge-type-select { height: 32px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 12px; font-size: 13px; color: #5a6170; background: #fff; cursor: pointer; outline: none; transition: all 0.2s; min-width: 100px; vertical-align: middle; line-height: 32px; }
         .toolbar-area .toolbar-select:hover, .toolbar-area #edge-type-select:hover { border-color: #1e9fff; color: #1e9fff; }
         .toolbar-area .toolbar-select:focus, .toolbar-area #edge-type-select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
         /* 模式切换按钮 */
@@ -209,13 +209,11 @@
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
     </div>
     <span class="toolbar-divider"></span>
-    <div class="layui-btn-group">
-        <select id="edge-type-select" class="toolbar-select">
-            <option value="custom-bezier" selected>〰️ 曲线</option>
-            <option value="custom-polyline">📐 折线</option>
-            <option value="custom-line">📏 直线</option>
-        </select>
-    </div>
+    <select id="edge-type-select" class="toolbar-select">
+        <option value="custom-bezier" selected>〰️ 曲线</option>
+        <option value="custom-polyline">📐 折线</option>
+        <option value="custom-line">📏 直线</option>
+    </select>
     <div class="layui-btn-group" style="margin-left: auto;">
         <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-export"><i class="layui-icon layui-icon-export"></i> 导出 JSON</button>
         <button class="layui-btn layui-btn-sm layui-btn-warm" id="btn-validate"><i class="layui-icon layui-icon-vercode"></i> 校验流程</button>

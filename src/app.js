@@ -655,14 +655,29 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
       // 切换线条类型
-      var edgeModel = lf.graphModel.getEdgeModelById(currentElementId);
-      if (f.edgeType && edgeModel && edgeModel.type !== f.edgeType) {
-        lf.changeEdgeType(currentElementId, f.edgeType);
-        // 重新获取切换类型后的 model
-        edgeModel = lf.graphModel.getEdgeModelById(currentElementId);
+      var needReselect = false;
+      if (f.edgeType) {
+        var curModel = lf.graphModel.getEdgeModelById(currentElementId);
+        if (curModel && curModel.type !== f.edgeType) {
+          // 保存旧边数据，删除旧边，用新类型重建
+          var oldData = curModel.getData();
+          lf.deleteEdge(currentElementId);
+          lf.addEdge({
+            id: oldData.id,
+            type: f.edgeType,
+            sourceNodeId: oldData.sourceNodeId,
+            targetNodeId: oldData.targetNodeId,
+            sourceAnchorId: oldData.sourceAnchorId,
+            targetAnchorId: oldData.targetAnchorId,
+            text: oldData.text,
+            properties: oldData.properties || {},
+          });
+          needReselect = true;
+        }
       }
       lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray, textPosition: f.textPosition });
-      // 直接通过 model 修改文本坐标并触发重绘
+      // 重新获取 model 并调整文本位置
+      var edgeModel = lf.graphModel.getEdgeModelById(currentElementId);
       if (edgeModel && edgeModel.text) {
         var sp = edgeModel.startPoint;
         var ep = edgeModel.endPoint;
@@ -672,6 +687,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         var newX = sp.x + (ep.x - sp.x) * ratio;
         var newY = sp.y + (ep.y - sp.y) * ratio;
         edgeModel.text = { value: edgeModel.text.value, x: newX, y: newY };
+      }
+      // 重建边后需要重新选中
+      if (needReselect) {
+        lf.selectElementById(currentElementId, true);
       }
     }
     layer.msg('保存成功', { icon: 1, time: 1000 });
