@@ -124,6 +124,7 @@
     <span class="toolbar-divider"></span>
     <div class="layui-btn-group">
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-snapshot"><i class="layui-icon layui-icon-picture"></i> 导出图片</button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
     </div>
     <span class="toolbar-divider"></span>
     <div class="layui-btn-group">
@@ -189,6 +190,8 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/layui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@logicflow/core@2.2.3/dist/index.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.css">
+<script src="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <!-- LogicFlow 2.x 全局变量兼容层 -->
@@ -208,6 +211,11 @@
 
   // 暴露 h() 函数用于创建 SVG 元素（自定义视图需要）
   window.h = Core.h;
+
+  // Extension 插件（MiniMap 等）
+  if (window.Extension) {
+    window.LogicFlow.MiniMap = Extension.MiniMap || Extension.default && Extension.default.MiniMap;
+  }
 </script>
 
 <!-- 打包的业务逻辑 -->

@@ -37,6 +37,17 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     adjustEdgeStartAndEnd: true,
     allowRotate: true,
     allowResize: true,
+    plugins: LogicFlow.MiniMap ? [LogicFlow.MiniMap] : [],
+    pluginsOptions: LogicFlow.MiniMap ? {
+      miniMap: {
+        width: 150,
+        height: 120,
+        showEdge: true,
+        isShowCloseIcon: true,
+        rightPosition: 10,
+        bottomPosition: 10
+      }
+    } : {},
   });
 
   // 设置边调整点样式，使其更醒目
@@ -654,6 +665,25 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       layer.closeAll();
       layer.msg('图片导出成功', { icon: 1 });
     });
+  };
+
+  // 小地图开关
+  var miniMapVisible = false;
+  document.getElementById('btn-minimap').onclick = function () {
+    if (!lf.extension || !lf.extension.miniMap) {
+      return layer.msg('小地图插件未加载', { icon: 2 });
+    }
+    if (miniMapVisible) {
+      lf.extension.miniMap.hide();
+      miniMapVisible = false;
+      this.classList.remove('layui-btn-warm');
+      this.classList.add('layui-btn-primary');
+    } else {
+      lf.extension.miniMap.show();
+      miniMapVisible = true;
+      this.classList.remove('layui-btn-primary');
+      this.classList.add('layui-btn-warm');
+    }
   };
 
   // 导出 JSON
