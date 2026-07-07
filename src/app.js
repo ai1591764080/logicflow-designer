@@ -580,6 +580,18 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
       lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray, textPosition: f.textPosition });
+      // 直接通过 model 修改文本坐标并触发重绘
+      var edgeModel = lf.graphModel.getEdgeModelById(currentElementId);
+      if (edgeModel && edgeModel.text) {
+        var sp = edgeModel.startPoint;
+        var ep = edgeModel.endPoint;
+        var ratio = 0.5;
+        if (f.textPosition === 'start') ratio = 0.15;
+        else if (f.textPosition === 'end') ratio = 0.85;
+        var newX = sp.x + (ep.x - sp.x) * ratio;
+        var newY = sp.y + (ep.y - sp.y) * ratio;
+        edgeModel.text = { value: edgeModel.text.value, x: newX, y: newY };
+      }
     }
     layer.msg('保存成功', { icon: 1, time: 1000 });
     return false;
