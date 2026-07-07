@@ -801,6 +801,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         stopZoomGraph: false,
         stopMoveGraph: false,
         nodeSelectedOutline: true,
+        allowResize: true,
+        allowRotate: true,
+        snapline: true,
+        hoverOutline: true,
+        edgeSelectedOutline: true,
       });
       // 恢复网格显示
       lf.setTheme({
@@ -821,17 +826,23 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       lf.keyboard.enabled = false;
       // 静默模式：禁止所有编辑操作
       lf.updateEditConfig({
-        adjustEdge: false,           // 禁止调整线条
-        adjustEdgeStartAndEnd: false, // 禁止调整线条端点
-        adjustNodePosition: false,    // 禁止移动节点
-        hideAnchors: true,            // 隐藏锚点
-        nodeTextEdit: false,          // 禁止编辑节点文本
-        edgeTextEdit: false,          // 禁止编辑线条文本
-        nodeTextDraggable: false,     // 禁止拖动节点文本
-        edgeTextDraggable: false,     // 禁止拖动线条文本
-        stopZoomGraph: true,          // 禁止缩放
-        stopMoveGraph: true,          // 禁止拖动画布
-        nodeSelectedOutline: false,   // 隐藏选中框
+        adjustEdge: false,             // 禁止调整线条
+        adjustEdgeStartAndEnd: false,   // 禁止调整线条端点
+        adjustNodePosition: false,      // 禁止移动节点
+        hideAnchors: true,              // 隐藏锚点
+        nodeTextEdit: false,            // 禁止编辑节点文本
+        edgeTextEdit: false,            // 禁止编辑线条文本
+        nodeTextDraggable: false,       // 禁止拖动节点文本
+        edgeTextDraggable: false,       // 禁止拖动线条文本
+        stopZoomGraph: true,            // 禁止缩放
+        stopMoveGraph: true,            // 禁止拖动画布
+        nodeSelectedOutline: false,     // 隐藏节点选中框
+        edgeSelectedOutline: false,     // 隐藏线条选中框
+        allowResize: false,             // 禁止节点缩放
+        allowRotate: false,             // 禁止节点旋转
+        snapline: false,                // 禁止对齐线
+        hoverOutline: false,            // 禁止悬停外框
+        outline: false,                 // 禁止外框
       });
       // 隐藏网格
       lf.setTheme({ grid: { visible: false } });
