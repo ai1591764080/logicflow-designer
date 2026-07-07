@@ -135,6 +135,7 @@
         /* 展示模式 */
         .present-mode .left-panel, .present-mode .right-panel { display: none; }
         .present-mode .center-panel { position: relative; flex: 1; }
+        .present-mode .center-panel #graph { background: #f0f4f8; }
         .present-mode #btn-undo, .present-mode #btn-redo,
         .present-mode #btn-zoom-in, .present-mode #btn-zoom-out, .present-mode #btn-fit, .present-mode #btn-reset, .present-mode #btn-fullscreen,
         .present-mode #btn-snapshot, .present-mode #btn-minimap,
@@ -142,6 +143,11 @@
         .present-mode #btn-export, .present-mode #btn-validate, .present-mode #btn-save { display: none; }
         .present-mode .toolbar-divider { display: none; }
         .present-mode #btn-mode-toggle { display: inline-flex !important; }
+        /* 展示模式下隐藏 LogicFlow 的网格、选中框、调整手柄 */
+        .present-mode .lf-grid { display: none !important; }
+        .present-mode .lf-node-selected-outline { display: none !important; }
+        .present-mode .lf-edge-adjust, .present-mode .lf-node-adjust { display: none !important; }
+        .present-mode .lf-anchor { display: none !important; }
         .mode-badge { display: inline-block; padding: 2px 8px; font-size: 11px; border-radius: 3px; margin-left: 8px; vertical-align: middle; }
         .mode-badge.edit { background: #e6f7ff; color: #1890ff; }
         .mode-badge.present { background: #fff7e6; color: #fa8c16; }

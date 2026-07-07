@@ -800,6 +800,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         edgeTextDraggable: true,
         stopZoomGraph: false,
         stopMoveGraph: false,
+        nodeSelectedOutline: true,
+      });
+      // 恢复网格显示
+      lf.setTheme({
+        grid: { size: 10, visible: true, type: 'dot', config: { color: '#e0e0e0', thickness: 1 } }
       });
       layer.msg('已切换到编辑模式', { icon: 1, time: 1500 });
     } else {
@@ -826,7 +831,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         edgeTextDraggable: false,     // 禁止拖动线条文本
         stopZoomGraph: true,          // 禁止缩放
         stopMoveGraph: true,          // 禁止拖动画布
+        nodeSelectedOutline: false,   // 隐藏选中框
       });
+      // 隐藏网格
+      lf.setTheme({ grid: { visible: false } });
       // 清空右侧面板
       clearPanel();
       layer.msg('已切换到展示模式', { icon: 1, time: 1500 });
