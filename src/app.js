@@ -811,6 +811,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       lf.setTheme({
         grid: { size: 10, visible: true, type: 'dot', config: { color: '#e0e0e0', thickness: 1 } }
       });
+      // 关闭小地图（如果是展示模式自动开启的）
+      if (lf.extension && lf.extension.miniMap) {
+        lf.extension.miniMap.hide();
+        miniMapVisible = false;
+        var minimapBtn = document.getElementById('btn-minimap');
+        if (minimapBtn) {
+          minimapBtn.classList.remove('layui-btn-warm');
+          minimapBtn.classList.add('layui-btn-primary');
+        }
+      }
       layer.msg('已切换到编辑模式', { icon: 1, time: 1500 });
     } else {
       // 切换到展示模式
@@ -824,7 +834,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       });
       // 禁用键盘快捷键
       lf.keyboard.enabled = false;
-      // 静默模式：禁止所有编辑操作
+      // 静默模式：禁止所有编辑操作，但允许缩放和滚动查看
       lf.updateEditConfig({
         adjustEdge: false,             // 禁止调整线条
         adjustEdgeStartAndEnd: false,   // 禁止调整线条端点
@@ -834,8 +844,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         edgeTextEdit: false,            // 禁止编辑线条文本
         nodeTextDraggable: false,       // 禁止拖动节点文本
         edgeTextDraggable: false,       // 禁止拖动线条文本
-        stopZoomGraph: true,            // 禁止缩放
-        stopMoveGraph: true,            // 禁止拖动画布
+        stopZoomGraph: false,           // 允许缩放查看
+        stopScrollGraph: false,         // 允许滚动查看
+        stopMoveGraph: true,            // 禁止拖动画布（防止误操作）
         nodeSelectedOutline: false,     // 隐藏节点选中框
         edgeSelectedOutline: false,     // 隐藏线条选中框
         allowResize: false,             // 禁止节点缩放
@@ -846,6 +857,20 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       });
       // 隐藏网格
       lf.setTheme({ grid: { visible: false } });
+      // 自动适应画布（完整显示所有节点）
+      setTimeout(function () {
+        lf.fitView(80);
+      }, 100);
+      // 自动开启小地图
+      if (lf.extension && lf.extension.miniMap && !miniMapVisible) {
+        lf.extension.miniMap.show();
+        miniMapVisible = true;
+        var minimapBtn = document.getElementById('btn-minimap');
+        if (minimapBtn) {
+          minimapBtn.classList.remove('layui-btn-primary');
+          minimapBtn.classList.add('layui-btn-warm');
+        }
+      }
       // 清空右侧面板
       clearPanel();
       layer.msg('已切换到展示模式', { icon: 1, time: 1500 });
