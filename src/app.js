@@ -556,6 +556,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     currentElementType = 'edge';
     var props = data.properties || {};
     var textVal = (data.text && data.text.value) || '';
+    // 获取当前边类型
+    var edgeModel = lf.graphModel.getEdgeModelById(data.id);
+    var currentEdgeType = edgeModel ? edgeModel.type : 'custom-bezier';
 
     document.getElementById('props-content').innerHTML =
       '<form class="layui-form" lay-filter="propsForm">' +
@@ -574,6 +577,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         // 线条样式区
         '<div class="props-section">' +
           '<div class="props-section-title">线条样式</div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">线条类型</label><div class="layui-input-block">' +
+            '<select name="edgeType">' +
+              '<option value="custom-bezier"' + (currentEdgeType === 'custom-bezier' ? ' selected' : '') + '>〰️ 曲线</option>' +
+              '<option value="custom-polyline"' + (currentEdgeType === 'custom-polyline' ? ' selected' : '') + '>📐 折线</option>' +
+              '<option value="custom-line"' + (currentEdgeType === 'custom-line' ? ' selected' : '') + '>📏 直线</option>' +
+            '</select>' +
+          '</div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">线条颜色</label><div class="layui-input-block"><div class="color-field" id="edge-stroke-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">文字颜色</label><div class="layui-input-block"><div class="color-field" id="edge-text-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">线条粗细</label><div class="layui-input-block">' +
@@ -644,9 +654,15 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: currentNodeTextColor, module: f.module });
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
+      // 切换线条类型
+      var edgeModel = lf.graphModel.getEdgeModelById(currentElementId);
+      if (f.edgeType && edgeModel && edgeModel.type !== f.edgeType) {
+        lf.changeEdgeType(currentElementId, f.edgeType);
+        // 重新获取切换类型后的 model
+        edgeModel = lf.graphModel.getEdgeModelById(currentElementId);
+      }
       lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray, textPosition: f.textPosition });
       // 直接通过 model 修改文本坐标并触发重绘
-      var edgeModel = lf.graphModel.getEdgeModelById(currentElementId);
       if (edgeModel && edgeModel.text) {
         var sp = edgeModel.startPoint;
         var ep = edgeModel.endPoint;

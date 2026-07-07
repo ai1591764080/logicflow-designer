@@ -173,9 +173,9 @@
         .toolbar-area #btn-save { background: #1e9fff; border-color: #1e9fff; color: #fff; }
         .toolbar-area #btn-save:hover { background: #1890ff; border-color: #1890ff; }
         /* 边类型下拉框 */
-        .toolbar-area #edge-type-select { height: 32px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 10px; font-size: 13px; color: #5a6170; background: #fff; cursor: pointer; outline: none; transition: all 0.2s; }
-        .toolbar-area #edge-type-select:hover { border-color: #1e9fff; }
-        .toolbar-area #edge-type-select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
+        .toolbar-area .toolbar-select, .toolbar-area #edge-type-select { height: 32px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 12px; font-size: 13px; color: #5a6170; background: #fff; cursor: pointer; outline: none; transition: all 0.2s; min-width: 100px; }
+        .toolbar-area .toolbar-select:hover, .toolbar-area #edge-type-select:hover { border-color: #1e9fff; color: #1e9fff; }
+        .toolbar-area .toolbar-select:focus, .toolbar-area #edge-type-select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
         /* 模式切换按钮 */
         .toolbar-area #btn-mode-toggle { border-radius: 6px; font-size: 13px; height: 32px; line-height: 32px; transition: all 0.2s; }
         .toolbar-area #btn-mode-toggle.layui-btn-warm { background: #fff7e6; border-color: #ffd591; color: #fa8c16; }
@@ -210,10 +210,10 @@
     </div>
     <span class="toolbar-divider"></span>
     <div class="layui-btn-group">
-        <select id="edge-type-select" style="height: 30px; border: 1px solid #e6e6e6; border-radius: 3px; padding: 0 8px; font-size: 13px; color: #333; background: #fff; cursor: pointer; outline: none;">
-            <option value="custom-bezier" selected>曲线</option>
-            <option value="custom-polyline">折线</option>
-            <option value="custom-line">直线</option>
+        <select id="edge-type-select" class="toolbar-select">
+            <option value="custom-bezier" selected>〰️ 曲线</option>
+            <option value="custom-polyline">📐 折线</option>
+            <option value="custom-line">📏 直线</option>
         </select>
     </div>
     <div class="layui-btn-group" style="margin-left: auto;">
