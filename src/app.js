@@ -486,17 +486,29 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     document.getElementById('props-content').innerHTML =
       '<form class="layui-form" lay-filter="propsForm">' +
-        '<div class="layui-form-item"><label class="layui-form-label">节点 ID</label><div class="layui-input-block"><input type="text" value="' + data.id + '" disabled class="layui-input layui-disabled"></div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">节点文本</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" class="layui-input"></div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">负责人</label><div class="layui-input-block"><input type="text" name="owner" value="' + (props.owner || '') + '" class="layui-input"></div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">描述</label><div class="layui-input-block"><textarea name="desc" class="layui-textarea">' + (props.desc || '') + '</textarea></div></div>' +
-        '<hr style="border-color: #f0f0f0; margin: 20px 0;">' +
-        '<div class="layui-form-item"><label class="layui-form-label">背景色</label><div class="layui-input-block"><div id="node-fill-color" style="margin-top: 5px;"></div></div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">边框色</label><div class="layui-input-block"><div id="node-stroke-color" style="margin-top: 5px;"></div></div></div>' +
-        '<div class="layui-form-item" style="margin-top: 30px;"><div class="layui-input-block">' +
+        // 基本信息区
+        '<div class="props-section">' +
+          '<div class="props-section-title">基本信息</div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">节点 ID</label><div class="layui-input-block"><input type="text" value="' + data.id + '" disabled class="layui-input layui-disabled"></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">节点文本</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" class="layui-input"></div></div>' +
+        '</div>' +
+        // 详细描述区
+        '<div class="props-section">' +
+          '<div class="props-section-title">详细描述</div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">负责人</label><div class="layui-input-block"><input type="text" name="owner" value="' + (props.owner || '') + '" placeholder="请输入负责人" class="layui-input"></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">描述</label><div class="layui-input-block"><textarea name="desc" placeholder="请输入节点描述">' + (props.desc || '') + '</textarea></div></div>' +
+        '</div>' +
+        // 外观样式区
+        '<div class="props-section">' +
+          '<div class="props-section-title">外观样式</div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">背景色</label><div class="layui-input-block"><div class="color-field" id="node-fill-color"></div></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">边框色</label><div class="layui-input-block"><div class="color-field" id="node-stroke-color"></div></div></div>' +
+        '</div>' +
+        // 操作按钮区
+        '<div class="props-actions">' +
           '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
-          '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除</button>' +
-        '</div></div>' +
+          '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除节点</button>' +
+        '</div>' +
       '</form>';
     form.render();
 
@@ -514,33 +526,42 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     document.getElementById('props-content').innerHTML =
       '<form class="layui-form" lay-filter="propsForm">' +
-        '<div class="layui-form-item"><label class="layui-form-label">连线文案</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" placeholder="如：同意、拒绝" class="layui-input"></div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">线条颜色</label><div class="layui-input-block"><div id="edge-stroke-color" style="margin-top: 5px;"></div></div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">文字颜色</label><div class="layui-input-block"><div id="edge-text-color" style="margin-top: 5px;"></div></div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">线条粗细</label><div class="layui-input-block">' +
-          '<select name="strokeWidth">' +
-            '<option value="1"' + (props.strokeWidth == 1 ? ' selected' : '') + '>1 px</option>' +
-            '<option value="2"' + (!props.strokeWidth || props.strokeWidth == 2 ? ' selected' : '') + '>2 px</option>' +
-            '<option value="3"' + (props.strokeWidth == 3 ? ' selected' : '') + '>3 px</option>' +
-          '</select>' +
-        '</div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">线条样式</label><div class="layui-input-block">' +
-          '<select name="strokeDasharray">' +
-            '<option value=""' + (!props.strokeDasharray ? ' selected' : '') + '>实线</option>' +
-            '<option value="5,5"' + (props.strokeDasharray === '5,5' ? ' selected' : '') + '>虚线</option>' +
-          '</select>' +
-        '</div></div>' +
-        '<div class="layui-form-item"><label class="layui-form-label">文本位置</label><div class="layui-input-block">' +
-          '<select name="textPosition">' +
-            '<option value="start"' + (props.textPosition === 'start' ? ' selected' : '') + '>起点附近</option>' +
-            '<option value="middle"' + (!props.textPosition || props.textPosition === 'middle' ? ' selected' : '') + '>中间位置</option>' +
-            '<option value="end"' + (props.textPosition === 'end' ? ' selected' : '') + '>终点附近</option>' +
-          '</select>' +
-        '</div></div>' +
-        '<div class="layui-form-item" style="margin-top: 30px;"><div class="layui-input-block">' +
+        // 文本信息区
+        '<div class="props-section">' +
+          '<div class="props-section-title">文本信息</div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">连线文案</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" placeholder="如：同意、拒绝" class="layui-input"></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">文本位置</label><div class="layui-input-block">' +
+            '<select name="textPosition">' +
+              '<option value="start"' + (props.textPosition === 'start' ? ' selected' : '') + '>起点附近</option>' +
+              '<option value="middle"' + (!props.textPosition || props.textPosition === 'middle' ? ' selected' : '') + '>中间位置</option>' +
+              '<option value="end"' + (props.textPosition === 'end' ? ' selected' : '') + '>终点附近</option>' +
+            '</select>' +
+          '</div></div>' +
+        '</div>' +
+        // 线条样式区
+        '<div class="props-section">' +
+          '<div class="props-section-title">线条样式</div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">线条颜色</label><div class="layui-input-block"><div class="color-field" id="edge-stroke-color"></div></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">文字颜色</label><div class="layui-input-block"><div class="color-field" id="edge-text-color"></div></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">线条粗细</label><div class="layui-input-block">' +
+            '<select name="strokeWidth">' +
+              '<option value="1"' + (props.strokeWidth == 1 ? ' selected' : '') + '>1 px</option>' +
+              '<option value="2"' + (!props.strokeWidth || props.strokeWidth == 2 ? ' selected' : '') + '>2 px</option>' +
+              '<option value="3"' + (props.strokeWidth == 3 ? ' selected' : '') + '>3 px</option>' +
+            '</select>' +
+          '</div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">线条样式</label><div class="layui-input-block">' +
+            '<select name="strokeDasharray">' +
+              '<option value=""' + (!props.strokeDasharray ? ' selected' : '') + '>实线</option>' +
+              '<option value="5,5"' + (props.strokeDasharray === '5,5' ? ' selected' : '') + '>虚线</option>' +
+            '</select>' +
+          '</div></div>' +
+        '</div>' +
+        // 操作按钮区
+        '<div class="props-actions">' +
           '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
-          '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除</button>' +
-        '</div></div>' +
+          '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除连线</button>' +
+        '</div>' +
       '</form>';
     form.render();
 
@@ -555,13 +576,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     currentElementType = null;
 
     document.getElementById('props-content').innerHTML =
-      '<form class="layui-form" lay-filter="propsForm">' +
-        '<div class="layui-form-item"><label class="layui-form-label">显示网格</label><div class="layui-input-block"><input type="checkbox" name="grid" lay-skin="switch" lay-text="开|关" lay-filter="gridSwitch" checked></div></div>' +
-        '<div class="layui-form-item" style="margin-top: 40px;"><div class="layui-input-block"><button type="button" class="layui-btn layui-btn-fluid layui-btn-primary" id="btn-clear">清空画布</button></div></div>' +
-      '</form>' +
-      '<div style="margin-top: 50px; color: #999; font-size: 12px; line-height: 1.8;">' +
-        '<p><b>提示：</b> 双击节点或连线可直接编辑文字</p>' +
-        '<p><b>快捷键：</b> Ctrl+Z 撤销 | Delete 删除</p>' +
+      '<div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>' +
+      '<div class="props-help">' +
+        '<p><b>快捷操作</b></p>' +
+        '<p><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销 &nbsp; <kbd>Ctrl</kbd>+<kbd>Y</kbd> 重做</p>' +
+        '<p><kbd>Delete</kbd> 删除选中元素</p>' +
+        '<p>双击节点或连线可编辑文字</p>' +
+        '<p style="margin-top:16px"><button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-clear" style="border-radius:6px;">清空画布</button></p>' +
       '</div>';
     form.render();
     document.getElementById('btn-clear').onclick = function () {

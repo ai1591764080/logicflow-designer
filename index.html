@@ -76,9 +76,46 @@
         .shape-base-diamond { width: 26px; height: 26px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin-bottom: 10px; }
 
         .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; }
-        .right-panel { width: 260px; background: #fff; border-left: 1px solid #e6e6e6; padding: 20px; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; }
+        .right-panel { width: 290px; background: #fff; border-left: 1px solid #e8ecf0; padding: 0; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; }
         .right-panel.collapsed { width: 0; padding: 0; overflow: hidden; border-left: none; }
-        .right-panel .panel-title { font-size: 16px; color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; }
+        .right-panel .panel-title { font-size: 14px; color: #1a1a2e; margin: 0; padding: 14px 20px; border-bottom: 1px solid #eef1f5; font-weight: 600; background: #fafbfc; position: sticky; top: 0; z-index: 1; display: flex; align-items: center; }
+        .right-panel .panel-title i { margin-right: 8px; color: #1e9fff; font-size: 18px; }
+        #props-content { padding: 0; }
+        /* 表单分区 */
+        .props-section { padding: 16px 20px; border-bottom: 1px solid #f2f4f7; }
+        .props-section:last-child { border-bottom: none; }
+        .props-section-title { font-size: 12px; color: #8c93a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .props-section-title::before { content: ''; display: inline-block; width: 3px; height: 12px; background: #1e9fff; border-radius: 2px; }
+        /* 表单项 */
+        #props-content .layui-form-item { margin-bottom: 14px; display: flex; align-items: center; }
+        #props-content .layui-form-item:last-child { margin-bottom: 0; }
+        #props-content .layui-form-label { width: 72px; padding: 0; text-align: left; font-size: 13px; color: #5a6170; flex-shrink: 0; line-height: 34px; }
+        #props-content .layui-input-block { margin-left: 82px; flex: 1; }
+        #props-content .layui-input { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; transition: all 0.2s; padding: 0 10px; }
+        #props-content .layui-input:hover { border-color: #c0c6d0; }
+        #props-content .layui-input:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
+        #props-content .layui-input[disabled] { background: #f0f2f5; color: #999; border-color: #e8e8e8; }
+        #props-content .layui-textarea { min-height: 64px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 8px 10px; transition: all 0.2s; resize: vertical; }
+        #props-content .layui-textarea:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
+        #props-content .layui-select { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; background: #fafbfc; }
+        #props-content .layui-select:hover { border-color: #c0c6d0; }
+        /* 按钮区 */
+        .props-actions { padding: 16px 20px; background: #fafbfc; border-top: 1px solid #f2f4f7; position: sticky; bottom: 0; }
+        .props-actions .layui-btn { border-radius: 6px; font-size: 13px; height: 36px; }
+        .props-actions .layui-btn + .layui-btn { margin-left: 8px; }
+        /* 颜色选择器 */
+        .color-field { display: flex; align-items: center; gap: 8px; }
+        .color-field .layui-colorpicker { width: 28px; height: 28px; border-radius: 6px; }
+        /* 分割线 */
+        #props-content hr { border-color: transparent; border-top: 1px solid #f2f4f7; margin: 0; }
+        /* 空状态 */
+        .empty-tip { color: #b0b8c5; text-align: center; padding: 80px 30px 0; font-size: 13px; line-height: 2; }
+        .empty-tip i { font-size: 48px; color: #dce1e8; display: block; margin-bottom: 16px; }
+        /* 提示区 */
+        .props-help { padding: 16px 20px; color: #9aa1ae; font-size: 12px; line-height: 2; }
+        .props-help p { margin: 0; }
+        .props-help b { color: #6b7280; }
+        .props-help kbd { display: inline-block; padding: 1px 5px; font-size: 11px; background: #f0f2f5; border: 1px solid #e0e4ea; border-radius: 3px; color: #5a6170; font-family: monospace; }
         
         /* 折叠按钮样式 */
         .toggle-btn {
@@ -95,8 +132,7 @@
         
         .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
         .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
-        .empty-tip { color: #999; text-align: center; margin-top: 80px; font-size: 14px; }
-        .empty-tip i { font-size: 48px; color: #ddd; display: block; margin-bottom: 15px; }
+
         .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: #e6e6e6; margin: 0 10px; vertical-align: middle; }
         
         #context-menu { display: none; position: absolute; z-index: 9999; background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 0; min-width: 120px; }
