@@ -336,6 +336,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // 公共边样式混入
   function edgeStyleMixin(BaseModel) {
     return class extends BaseModel {
+      initNodeData(data) {
+        super.initNodeData(data);
+        this.customTextPosition = true;
+      }
       getEdgeStyle() {
         var style = super.getEdgeStyle();
         var props = this.properties || {};
