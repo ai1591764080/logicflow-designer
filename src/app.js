@@ -757,6 +757,71 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     console.log('提交:', lf.getGraphData());
   };
 
+  // ========== 编辑模式 / 展示模式切换 ==========
+  var isEditMode = true;
+  var modeToggleBtn = document.getElementById('btn-mode-toggle');
+
+  // 保存原始事件处理（用于恢复）
+  var originalNodeClickHandler = null;
+  var originalEdgeClickHandler = null;
+
+  modeToggleBtn.onclick = function () {
+    isEditMode = !isEditMode;
+    if (isEditMode) {
+      // 切换到编辑模式
+      document.body.classList.remove('present-mode');
+      this.innerHTML = '<i class="layui-icon layui-icon-read"></i> 展示模式';
+      this.classList.remove('layui-btn-warm');
+      this.classList.add('layui-btn-primary');
+      // 恢复拖拽
+      document.querySelectorAll('.node-item').forEach(function (item) {
+        item.setAttribute('draggable', 'true');
+      });
+      // 恢复键盘
+      lf.keyboard.enabled = true;
+      layer.msg('已切换到编辑模式', { icon: 1, time: 1500 });
+    } else {
+      // 切换到展示模式
+      document.body.classList.add('present-mode');
+      this.innerHTML = '<i class="layui-icon layui-icon-edit"></i> 编辑模式';
+      this.classList.remove('layui-btn-primary');
+      this.classList.add('layui-btn-warm');
+      // 禁用左侧拖拽
+      document.querySelectorAll('.node-item').forEach(function (item) {
+        item.setAttribute('draggable', 'false');
+      });
+      // 禁用键盘快捷键
+      lf.keyboard.enabled = false;
+      // 清空右侧面板
+      clearPanel();
+      layer.msg('已切换到展示模式', { icon: 1, time: 1500 });
+    }
+  };
+
+  // 展示模式下节点点击事件（弹出提示）
+  lf.on('node:click', function (arg) {
+    if (!isEditMode) {
+      var text = (arg.data.text && arg.data.text.value) || '未命名节点';
+      var type = arg.data.type || 'unknown';
+      layer.msg('节点：' + text + '（类型：' + type + '）', { icon: 0, time: 2000 });
+    }
+  });
+
+  lf.on('edge:click', function (arg) {
+    if (!isEditMode) {
+      var text = (arg.data.text && arg.data.text.value) || '未命名连线';
+      layer.msg('连线：' + text, { icon: 0, time: 2000 });
+    }
+  });
+
+  // ========== 模块下拉框事件 ==========
+  document.getElementById('selModule').onchange = function () {
+    var val = this.value;
+    var text = this.options[this.selectedIndex].text;
+    layer.msg('已选择模块：' + text, { icon: 1, time: 1500 });
+    console.log('模块选择:', val, text);
+  };
+
   // 窗口自适应
   window.addEventListener('resize', function () { lf.resize(); });
 
