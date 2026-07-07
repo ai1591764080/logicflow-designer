@@ -480,6 +480,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // ========== 属性面板逻辑 ==========
   var currentElementId = null, currentElementType = null;
+  var currentNodeTextColor = ''; // 跟踪当前节点字体颜色（颜色选择器实时更新）
 
   var defaultColors = {
     'start-node': { fill: '#d9f0d3', stroke: '#52c41a' },
@@ -535,7 +536,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     colorpicker.render({ elem: '#node-fill-color', color: props.fill || colors.fill, done: function (c) { lf.setProperties(data.id, { fill: c }); } });
     colorpicker.render({ elem: '#node-stroke-color', color: props.stroke || colors.stroke, done: function (c) { lf.setProperties(data.id, { stroke: c }); } });
-    colorpicker.render({ elem: '#node-text-color', color: props.textColor || '#333333', done: function (c) { lf.setProperties(data.id, { textColor: c }); } });
+    currentNodeTextColor = props.textColor || '#333333';
+    colorpicker.render({ elem: '#node-text-color', color: currentNodeTextColor, done: function (c) { currentNodeTextColor = c; lf.setProperties(data.id, { textColor: c }); } });
 
     document.getElementById('btn-delete').onclick = function () { lf.deleteNode(currentElementId); clearPanel(); };
   }
@@ -630,7 +632,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var f = obj.field;
     if (currentElementType === 'node') {
       lf.updateText(currentElementId, f.text);
-      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: props.textColor });
+      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: currentNodeTextColor });
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
       lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray, textPosition: f.textPosition });
