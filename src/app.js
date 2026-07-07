@@ -70,17 +70,26 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     return style;
   }
 
+  // 节点文本样式工具（读取 properties.textColor）
+  function applyNodeTextStyle(model, style) {
+    var props = model.properties || {};
+    if (props.textColor) style.color = props.textColor;
+    return style;
+  }
+
   // ========== 注册自定义节点类型 (2.x ES6 class) ==========
 
   // 开始节点
   class StartNodeModel extends CircleNodeModel {
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#d9f0d3', '#52c41a'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'start-node', view: CircleNode, model: StartNodeModel });
 
   // 结束节点
   class EndNodeModel extends CircleNodeModel {
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffd8d8', '#f5222d'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'end-node', view: CircleNode, model: EndNodeModel });
 
@@ -91,6 +100,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       style.radius = 8;
       return applyNodeStyle(this, style, '#e6f7ff', '#1890ff');
     }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'user-task', view: RectNode, model: UserTaskModel });
 
@@ -102,18 +112,21 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       this.ry = (data.properties && data.properties.ry) || 50;
     }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#fffbe6', '#faad14'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'condition-node', view: DiamondNode, model: ConditionModel });
 
   // 基础矩形
   class BaseRectModel extends RectNodeModel {
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'rect', view: RectNode, model: BaseRectModel });
 
   // 基础圆形
   class BaseCircleModel extends CircleNodeModel {
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'circle', view: CircleNode, model: BaseCircleModel });
 
@@ -125,6 +138,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       this.ry = (data.properties && data.properties.ry) || 50;
     }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'diamond', view: DiamondNode, model: BaseDiamondModel });
 
@@ -147,6 +161,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       style.radius = 4;
       return applyNodeStyle(this, style, '#ffffff', '#333333');
     }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'oblong', view: RectNode, model: OblongModel });
 
@@ -168,6 +183,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       style.radius = 0;
       return applyNodeStyle(this, style, '#ffffff', '#333333');
     }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'sharp-rect', view: RectNode, model: SharpRectModel });
 
@@ -189,6 +205,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       style.radius = 25;
       return applyNodeStyle(this, style, '#ffffff', '#333333');
     }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'round-rect', view: RectNode, model: RoundRectModel });
 
@@ -206,6 +223,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       this.height = 80;
     }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   
   class DocumentView extends RectNode {
@@ -246,6 +264,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       this.height = 70;
     }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   
   class SubprocessView extends RectNode {
@@ -300,6 +319,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       this.height = 70;
     }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
+    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   
   class InternalStorageView extends RectNode {
@@ -503,6 +523,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="props-section-title">外观样式</div>' +
           '<div class="layui-form-item"><label class="layui-form-label">背景色</label><div class="layui-input-block"><div class="color-field" id="node-fill-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">边框色</label><div class="layui-input-block"><div class="color-field" id="node-stroke-color"></div></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">字体色</label><div class="layui-input-block"><div class="color-field" id="node-text-color"></div></div></div>' +
         '</div>' +
         // 操作按钮区
         '<div class="props-actions">' +
@@ -514,6 +535,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     colorpicker.render({ elem: '#node-fill-color', color: props.fill || colors.fill, done: function (c) { lf.setProperties(data.id, { fill: c }); } });
     colorpicker.render({ elem: '#node-stroke-color', color: props.stroke || colors.stroke, done: function (c) { lf.setProperties(data.id, { stroke: c }); } });
+    colorpicker.render({ elem: '#node-text-color', color: props.textColor || '#333333', done: function (c) { lf.setProperties(data.id, { textColor: c }); } });
 
     document.getElementById('btn-delete').onclick = function () { lf.deleteNode(currentElementId); clearPanel(); };
   }
@@ -608,7 +630,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var f = obj.field;
     if (currentElementType === 'node') {
       lf.updateText(currentElementId, f.text);
-      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc });
+      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: props.textColor });
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
       lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray, textPosition: f.textPosition });
