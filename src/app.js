@@ -504,6 +504,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var props = data.properties || {};
     var colors = defaultColors[data.type] || { fill: '#ffffff', stroke: '#333333' };
     var textVal = (data.text && data.text.value) || '';
+    var moduleVal = props.module || '2001';
 
     document.getElementById('props-content').innerHTML =
       '<form class="layui-form" lay-filter="propsForm">' +
@@ -512,6 +513,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="props-section-title">基本信息</div>' +
           '<div class="layui-form-item"><label class="layui-form-label">节点 ID</label><div class="layui-input-block"><input type="text" value="' + data.id + '" disabled class="layui-input layui-disabled"></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">节点文本</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" class="layui-input"></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">所属模块</label><div class="layui-input-block">' +
+            '<select name="module">' +
+              '<option value="2001"' + (moduleVal === '2001' ? ' selected' : '') + '>通用流程</option>' +
+              '<option value="2002"' + (moduleVal === '2002' ? ' selected' : '') + '>客户管理</option>' +
+              '<option value="2003"' + (moduleVal === '2003' ? ' selected' : '') + '>订单处理</option>' +
+              '<option value="2004"' + (moduleVal === '2004' ? ' selected' : '') + '>财务审批</option>' +
+            '</select>' +
+          '</div></div>' +
         '</div>' +
         // 详细描述区
         '<div class="props-section">' +
@@ -632,7 +641,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var f = obj.field;
     if (currentElementType === 'node') {
       lf.updateText(currentElementId, f.text);
-      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: currentNodeTextColor });
+      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: currentNodeTextColor, module: f.module });
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
       lf.setProperties(currentElementId, { strokeWidth: parseInt(f.strokeWidth), strokeDasharray: f.strokeDasharray, textPosition: f.textPosition });
@@ -779,6 +788,19 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       });
       // 恢复键盘
       lf.keyboard.enabled = true;
+      // 恢复画布编辑能力
+      lf.updateEditConfig({
+        adjustEdge: true,
+        adjustEdgeStartAndEnd: true,
+        adjustNodePosition: true,
+        hideAnchors: false,
+        nodeTextEdit: true,
+        edgeTextEdit: true,
+        nodeTextDraggable: true,
+        edgeTextDraggable: true,
+        stopZoomGraph: false,
+        stopMoveGraph: false,
+      });
       layer.msg('已切换到编辑模式', { icon: 1, time: 1500 });
     } else {
       // 切换到展示模式
@@ -792,6 +814,19 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       });
       // 禁用键盘快捷键
       lf.keyboard.enabled = false;
+      // 静默模式：禁止所有编辑操作
+      lf.updateEditConfig({
+        adjustEdge: false,           // 禁止调整线条
+        adjustEdgeStartAndEnd: false, // 禁止调整线条端点
+        adjustNodePosition: false,    // 禁止移动节点
+        hideAnchors: true,            // 隐藏锚点
+        nodeTextEdit: false,          // 禁止编辑节点文本
+        edgeTextEdit: false,          // 禁止编辑线条文本
+        nodeTextDraggable: false,     // 禁止拖动节点文本
+        edgeTextDraggable: false,     // 禁止拖动线条文本
+        stopZoomGraph: true,          // 禁止缩放
+        stopMoveGraph: true,          // 禁止拖动画布
+      });
       // 清空右侧面板
       clearPanel();
       layer.msg('已切换到展示模式', { icon: 1, time: 1500 });
@@ -803,7 +838,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (!isEditMode) {
       var text = (arg.data.text && arg.data.text.value) || '未命名节点';
       var type = arg.data.type || 'unknown';
-      layer.msg('节点：' + text + '（类型：' + type + '）', { icon: 0, time: 2000 });
+      var props = arg.data.properties || {};
+      var info = '节点：' + text + '（类型：' + type + '）';
+      if (props.owner) info += '\n负责人：' + props.owner;
+      if (props.desc) info += '\n描述：' + props.desc;
+      layer.msg(info, { icon: 0, time: 3000 });
     }
   });
 
@@ -813,14 +852,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       layer.msg('连线：' + text, { icon: 0, time: 2000 });
     }
   });
-
-  // ========== 模块下拉框事件 ==========
-  document.getElementById('selModule').onchange = function () {
-    var val = this.value;
-    var text = this.options[this.selectedIndex].text;
-    layer.msg('已选择模块：' + text, { icon: 1, time: 1500 });
-    console.log('模块选择:', val, text);
-  };
 
   // 窗口自适应
   window.addEventListener('resize', function () { lf.resize(); });
