@@ -799,6 +799,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         nodeTextDraggable: true,
         edgeTextDraggable: true,
         stopZoomGraph: false,
+        stopScrollGraph: false,
         stopMoveGraph: false,
         nodeSelectedOutline: true,
         allowResize: true,
@@ -834,7 +835,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       });
       // 禁用键盘快捷键
       lf.keyboard.enabled = false;
-      // 静默模式：禁止所有编辑操作，但允许缩放和滚动查看
+      // 静默模式：禁止所有编辑操作，允许缩放但限制画布范围
       lf.updateEditConfig({
         adjustEdge: false,             // 禁止调整线条
         adjustEdgeStartAndEnd: false,   // 禁止调整线条端点
@@ -845,8 +846,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         nodeTextDraggable: false,       // 禁止拖动节点文本
         edgeTextDraggable: false,       // 禁止拖动线条文本
         stopZoomGraph: false,           // 允许缩放查看
-        stopScrollGraph: false,         // 允许滚动查看
-        stopMoveGraph: true,            // 禁止拖动画布（防止误操作）
+        stopScrollGraph: true,          // 禁止滚轮平移（防止无限滚动）
+        stopMoveGraph: true,            // 禁止拖动画布
         nodeSelectedOutline: false,     // 隐藏节点选中框
         edgeSelectedOutline: false,     // 隐藏线条选中框
         allowResize: false,             // 禁止节点缩放
