@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "esbuild src/app.js --bundle --outfile=dist/app.js --loader:.css=text",
+    "dev": "esbuild src/app.js --bundle --outfile=dist/app.js --loader:.css=text --watch --servedir=.",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

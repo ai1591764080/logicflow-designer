@@ -427,6 +427,45 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // 暴露实例供外部调用
   window.lf = lf;
 
+  // ========== 模块列表（远程加载） ==========
+  var _moduleList = [];
+
+  function getModules() {
+    $.ajax({
+      type: 'POST',
+      url: '/Setting/UISolution/Ashx/CustomTopMenu.ashx',
+      async: false,
+      data: { act: 'GetAllChildMenu' },
+      success: function (retData) {
+        try {
+          _moduleList = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+        } catch (e) {
+          _moduleList = [];
+        }
+      },
+      error: function () {
+        _moduleList = [];
+      }
+    });
+  }
+
+  // 初始化加载模块列表
+  getModules();
+
+  // 构建模块下拉 HTML
+  function buildModuleOptions(moduleVal) {
+    var html = '';
+    if (_moduleList.length === 0) {
+      html += '<option value="">暂无模块</option>';
+    }
+    for (var i = 0; i < _moduleList.length; i++) {
+      var item = _moduleList[i];
+      var selected = (String(item.Id) === String(moduleVal)) ? ' selected' : '';
+      html += '<option value="' + item.Id + '" flag="' + item.Flag + '"' + selected + '>' + item.Name + '</option>';
+    }
+    return html;
+  }
+
   // ========== 拖拽添加节点 ==========
   document.querySelectorAll('.node-item').forEach(function (item) {
     item.addEventListener('dragstart', function (e) {
@@ -504,7 +543,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var props = data.properties || {};
     var colors = defaultColors[data.type] || { fill: '#ffffff', stroke: '#333333' };
     var textVal = (data.text && data.text.value) || '';
-    var moduleVal = props.module || '2001';
+    var moduleVal = props.module || (_moduleList.length > 0 ? String(_moduleList[0].Id) : '');
 
     document.getElementById('props-content').innerHTML =
       '<form class="layui-form" lay-filter="propsForm">' +
@@ -514,12 +553,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="layui-form-item"><label class="layui-form-label">节点 ID</label><div class="layui-input-block"><input type="text" value="' + data.id + '" disabled class="layui-input layui-disabled"></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">节点文本</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" class="layui-input"></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">所属模块</label><div class="layui-input-block">' +
-            '<select name="module">' +
-              '<option value="2001"' + (moduleVal === '2001' ? ' selected' : '') + '>通用流程</option>' +
-              '<option value="2002"' + (moduleVal === '2002' ? ' selected' : '') + '>客户管理</option>' +
-              '<option value="2003"' + (moduleVal === '2003' ? ' selected' : '') + '>订单处理</option>' +
-              '<option value="2004"' + (moduleVal === '2004' ? ' selected' : '') + '>财务审批</option>' +
-            '</select>' +
+            '<select name="module">' + buildModuleOptions(moduleVal) + '</select>' +
           '</div></div>' +
         '</div>' +
         // 详细描述区
@@ -919,6 +953,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var text = (arg.data.text && arg.data.text.value) || '未命名节点';
       var type = arg.data.type || 'unknown';
       var props = arg.data.properties || {};
+      console.log('节点点击:', arg.data);
       var info = '节点：' + text + '（类型：' + type + '）';
       if (props.owner) info += '\n负责人：' + props.owner;
       if (props.desc) info += '\n描述：' + props.desc;
@@ -926,12 +961,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   });
 
-  lf.on('edge:click', function (arg) {
-    if (!isEditMode) {
-      var text = (arg.data.text && arg.data.text.value) || '未命名连线';
-      layer.msg('连线：' + text, { icon: 0, time: 2000 });
-    }
-  });
+  // lf.on('edge:click', function (arg) {
+  //   if (!isEditMode) {
+  //     var text = (arg.data.text && arg.data.text.value) || '未命名连线';
+  //     layer.msg('连线：' + text, { icon: 0, time: 2000 });
+  //   }
+  // });
 
   // 窗口自适应
   window.addEventListener('resize', function () { lf.resize(); });
