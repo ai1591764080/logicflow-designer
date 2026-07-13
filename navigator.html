@@ -3,6 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>功能导航设计</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/core/lib/style/index.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/css/layui.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        .main-container { flex: 1; display: flex; min-height: 0; }
+
+        /* 左侧面板：分组导航 + 基础图形 */
+        .left-panel { width: 280px; background: #fff; border-right: 1px solid #e6e6e6; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; position: relative; display: flex; flex-direction: column; }
+        .left-panel.collapsed { width: 0; overflow: hidden; border-right: none; }
+
+        /* 分组导航区 */
+        .nav-group-section { padding: 16px; border-bottom: 1px solid #f0f2f5; flex-shrink: 0; }
+        .panel-title { font-size: 16px; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; font-weight: bold; }
+        .nav-group-list { max-height: 200px; overflow-y: auto; }
+        .nav-group-item { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #333; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .nav-group-item:hover { background: #f0f7ff; color: #1e9fff; }
+        .nav-group-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
+        .nav-group-item i { font-size: 16px; }
+        .nav-group-footer { margin-top: 10px; }
+
+        /* 基础图形区 */
+        .shapes-section { padding: 16px; flex: 1; overflow-y: auto; }
+        .node-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 65px; margin-bottom: 10px;
+            border: none; border-radius: 4px;
+            cursor: grab; background: transparent; transition: all 0.2s; user-select: none;
+        }
+        .node-item:hover { background: transparent; }
+        .node-item:hover .node-text { color: #1e9fff; }
+        .node-item:active { cursor: grabbing; }
+        .base-shapes-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+        }
+        .base-shapes-grid .node-item {
+            height: 60px; margin-bottom: 0;
+            border: none; background: transparent;
+        }
+        .base-shapes-grid .node-item:hover {
+            border: none; box-shadow: none; background: transparent; border-radius: 4px;
+        }
+        .base-shapes-grid .node-text { display: none; }
+        .base-shapes-grid .node-shape { margin-bottom: 0; }
+        .node-shape { width: 34px; height: 34px; margin-bottom: 4px; }
+        .node-text { font-size: 12px; color: #333; transition: color 0.2s; }
+
+        .shape-base-rect { border-radius: 2px; border: 2px solid #666; background: #fff; }
+        .shape-oblong { border-radius: 4px; border: 2px solid #666; background: #fff; width: 44px; height: 22px; }
+        .shape-sharp-rect { border-radius: 0; border: 2px solid #666; background: #fff; width: 46px; height: 22px; }
+        .shape-round-rect { border-radius: 10px; border: 2px solid #666; background: #fff; width: 46px; height: 22px; }
+        .shape-document {
+            width: 42px; height: 28px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='28'%3E%3Cpath d='M1 1H41V19C33 12 28 12 21 19C14 26 9 26 1 19Z' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+            background-size: 100% 100%;
+        }
+        .shape-subprocess { width: 42px; height: 26px; border: 2px solid #666; background: #fff; position: relative; }
+        .shape-subprocess::before, .shape-subprocess::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: #666;
+        }
+        .shape-subprocess::before { left: 6px; }
+        .shape-subprocess::after { right: 6px; }
+        .shape-internal-storage {
+            width: 42px; height: 26px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='26'%3E%3Crect x='1' y='1' width='40' height='24' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='1' y1='8' x2='41' y2='8' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='10' y1='1' x2='10' y2='25' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+            background-size: 100% 100%;
+        }
+        .shape-base-circle { border-radius: 50%; border: 2px solid #666; background: #fff; }
+        .shape-base-diamond { width: 26px; height: 26px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin-bottom: 10px; }
+
+        .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; }
+        .right-panel { width: 290px; background: #fff; border-left: 1px solid #e8ecf0; padding: 0; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; }
+        .right-panel.collapsed { width: 0; padding: 0; overflow: hidden; border-left: none; }
+        .right-panel .panel-title { font-size: 14px; color: #1a1a2e; margin: 0; padding: 14px 20px; border-bottom: 1px solid #eef1f5; font-weight: 600; background: #fafbfc; position: sticky; top: 0; z-index: 1; display: flex; align-items: center; }
+        .right-panel .panel-title i { margin-right: 8px; color: #1e9fff; font-size: 18px; }
+        #props-content { padding: 0; }
+        .props-section { padding: 16px 20px; border-bottom: 1px solid #f2f4f7; }
+        .props-section:last-child { border-bottom: none; }
+        .props-section-title { font-size: 12px; color: #8c93a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .props-section-title::before { content: ''; display: inline-block; width: 3px; height: 12px; background: #1e9fff; border-radius: 2px; }
+        #props-content .layui-form-item { margin-bottom: 14px; display: flex; align-items: center; }
+        #props-content .layui-form-item:last-child { margin-bottom: 0; }
+        #props-content .layui-form-label { width: 72px; padding: 0; text-align: left; font-size: 13px; color: #5a6170; flex-shrink: 0; line-height: 34px; }
+        #props-content .layui-input-block { margin-left: 82px; flex: 1; }
+        #props-content .layui-input { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; transition: all 0.2s; padding: 0 10px; }
+        #props-content .layui-input:hover { border-color: #c0c6d0; }
+        #props-content .layui-input:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
+        #props-content .layui-input[disabled] { background: #f0f2f5; color: #999; border-color: #e8e8e8; }
+        #props-content .layui-textarea { min-height: 64px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 8px 10px; transition: all 0.2s; resize: vertical; }
+        #props-content .layui-textarea:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
+        #props-content .layui-select { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; background: #fafbfc; }
+        #props-content .layui-select:hover { border-color: #c0c6d0; }
+        .props-actions { padding: 16px 20px; background: #fafbfc; border-top: 1px solid #f2f4f7; position: sticky; bottom: 0; }
+        .props-actions .layui-btn { border-radius: 6px; font-size: 13px; height: 36px; }
+        .props-actions .layui-btn + .layui-btn { margin-left: 8px; }
+        .color-field { display: flex; align-items: center; gap: 8px; }
+        .color-field .layui-colorpicker { width: 28px; height: 28px; border-radius: 6px; }
+        #props-content hr { border-color: transparent; border-top: 1px solid #f2f4f7; margin: 0; }
+        .empty-tip { color: #b0b8c5; text-align: center; padding: 80px 30px 0; font-size: 13px; line-height: 2; }
+        .empty-tip i { font-size: 48px; color: #dce1e8; display: block; margin-bottom: 16px; }
+        .props-help { padding: 16px 20px; color: #9aa1ae; font-size: 12px; line-height: 2; }
+        .props-help p { margin: 0; }
+        .props-help b { color: #6b7280; }
+        .props-help kbd { display: inline-block; padding: 1px 5px; font-size: 11px; background: #f0f2f5; border: 1px solid #e0e4ea; border-radius: 3px; color: #5a6170; font-family: monospace; }
+
+        .toggle-btn {
+            position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+            width: 16px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center;
+            background: #fff; border: 1px solid #e6e6e6; cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .toggle-btn:hover { background: #f0f9ff; border-color: #1e9fff; box-shadow: 0 0 6px rgba(30,159,255,0.2); }
+        .toggle-btn i { font-size: 12px; color: #999; }
+        .toggle-btn:hover i { color: #1e9fff; }
+        .left-toggle { right: -17px; border-radius: 0 4px 4px 0; border-left: none; }
+        .right-toggle { left: -17px; border-radius: 4px 0 0 4px; border-right: none; }
+
+        .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
+        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
+
+        .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: linear-gradient(to bottom, transparent, #dce1e8, transparent); margin: 0 8px; vertical-align: middle; }
+        .toolbar-area .layui-btn { border-radius: 6px; font-size: 13px; transition: all 0.2s; border-color: #e0e4ea; }
+        .toolbar-area .layui-btn-primary { background: #fff; color: #5a6170; }
+        .toolbar-area .layui-btn-primary:hover { background: #f0f7ff; border-color: #1e9fff; color: #1e9fff; }
+        .toolbar-area .layui-btn i { font-size: 15px; }
+        .toolbar-area .layui-btn-sm { height: 32px; line-height: 32px; padding: 0 10px; }
+        .toolbar-area .layui-btn-sm + .layui-btn-sm { margin-left: 2px; }
+        .toolbar-area #btn-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
+        .toolbar-area #btn-export:hover { background: #1890ff; color: #fff; }
+        .toolbar-area #btn-save { background: #1e9fff; border-color: #1e9fff; color: #fff; }
+        .toolbar-area #btn-save:hover { background: #1890ff; border-color: #1890ff; }
+        .toolbar-area .toolbar-select, .toolbar-area #edge-type-select { height: 32px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 12px; font-size: 13px; color: #5a6170; background: #fff; cursor: pointer; outline: none; transition: all 0.2s; min-width: 100px; vertical-align: middle; line-height: 32px; }
+        .toolbar-area .toolbar-select:hover, .toolbar-area #edge-type-select:hover { border-color: #1e9fff; color: #1e9fff; }
+        .toolbar-area .toolbar-select:focus, .toolbar-area #edge-type-select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
+
+        #context-menu { display: none; position: absolute; z-index: 9999; background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 0; min-width: 120px; }
+        #context-menu .menu-item { padding: 8px 15px; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; }
+        #context-menu .menu-item:hover { background: #f2f2f2; color: #1e9fff; }
+        #context-menu .menu-item i { margin-right: 8px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<!-- 顶部工具栏 -->
+<div class="toolbar-area" style="height: 50px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 16px; line-height: 50px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center;">
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-undo" title="撤销 (Ctrl+Z)"><i class="layui-icon layui-icon-left"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-redo" title="重做 (Ctrl+Y)"><i class="layui-icon layui-icon-right"></i></button>
+    </div>
+    <span class="toolbar-divider"></span>
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-in" title="放大"><i class="layui-icon layui-icon-addition"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fit" title="适应画布"><i class="layui-icon layui-icon-senior"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-reset" title="重置缩放"><i class="layui-icon layui-icon-refresh"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fullscreen" title="全屏模式"><i class="layui-icon layui-icon-screen-full"></i></button>
+    </div>
+    <span class="toolbar-divider"></span>
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-snapshot"><i class="layui-icon layui-icon-picture"></i> 导出图片</button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
+    </div>
+    <span class="toolbar-divider"></span>
+    <select id="edge-type-select" class="toolbar-select">
+        <option value="custom-bezier" selected>〰️ 曲线</option>
+        <option value="custom-polyline">📐 折线</option>
+        <option value="custom-line">📏 直线</option>
+    </select>
+    <div class="layui-btn-group" style="margin-left: auto;">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-export"><i class="layui-icon layui-icon-export"></i> 导出 JSON</button>
+        <button class="layui-btn layui-btn-sm" id="btn-save"><i class="layui-icon layui-icon-ok"></i> 保存发布</button>
+    </div>
+    <span class="toolbar-divider"></span>
+    <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-go-designer" title="审批流程设计"><i class="layui-icon layui-icon-transfer"></i> 流程设计</button>
+</div>
+
+<!-- 主体三栏布局 -->
+<div class="main-container">
+    <!-- 左侧：分组导航 + 基础图形 -->
+    <div class="left-panel" id="left-panel">
+        <!-- 分组导航区 -->
+        <div class="nav-group-section">
+            <div class="panel-title">导航分组</div>
+            <div class="nav-group-list" id="nav-group-list">
+                <!-- 动态加载分组列表 -->
+            </div>
+            <div class="nav-group-footer">
+                <button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-set-group" style="border-radius: 6px;">
+                    <i class="layui-icon layui-icon-set"></i> 设置分组
+                </button>
+            </div>
+        </div>
+
+        <!-- 基础图形区 -->
+        <div class="shapes-section">
+            <div class="panel-title">基础图形</div>
+            <div class="base-shapes-grid">
+                <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div></div>
+                <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div></div>
+                <div class="node-item" draggable="true" data-type="sharp-rect"><div class="node-shape shape-sharp-rect"></div></div>
+                <div class="node-item" draggable="true" data-type="round-rect"><div class="node-shape shape-round-rect"></div></div>
+                <div class="node-item" draggable="true" data-type="document"><div class="node-shape shape-document"></div></div>
+                <div class="node-item" draggable="true" data-type="subprocess"><div class="node-shape shape-subprocess"></div></div>
+                <div class="node-item" draggable="true" data-type="internal-storage"><div class="node-shape shape-internal-storage"></div></div>
+                <div class="node-item" draggable="true" data-type="circle"><div class="node-shape shape-base-circle"></div></div>
+                <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div></div>
+            </div>
+        </div>
+        <button id="toggle-left" class="toggle-btn left-toggle" title="收起/展开左侧面板"><i class="layui-icon layui-icon-left"></i></button>
+    </div>
+
+    <!-- 中间画布 -->
+    <div class="center-panel">
+        <div id="graph" style="width: 100%; height: 100%;"></div>
+    </div>
+
+    <!-- 右侧属性面板 -->
+    <div class="right-panel" id="right-panel">
+        <div class="panel-title">属性配置</div>
+        <div id="props-content">
+            <div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>
+        </div>
+        <button id="toggle-right" class="toggle-btn right-toggle" title="收起/展开右侧面板"><i class="layui-icon layui-icon-right"></i></button>
+    </div>
+</div>
+
+<!-- 右键菜单 -->
+<div id="context-menu">
+    <div class="menu-item" id="menu-edit"><i class="layui-icon layui-icon-edit"></i> 编辑属性</div>
+    <div class="menu-item" id="menu-delete"><i class="layui-icon layui-icon-delete"></i> 删除</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/layui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@logicflow/core@2.2.3/dist/index.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.css">
+<script src="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<!-- LogicFlow 2.x 全局变量兼容层 -->
+<script>
+  var LFConstructor = Core.default || Core.LogicFlow;
+  window.LogicFlow = LFConstructor;
+  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','LineEdge','LineEdgeModel','PolylineEdge','PolylineEdgeModel','BezierEdge','BezierEdgeModel'];
+  for (var i = 0; i < _keys.length; i++) {
+    if (Core[_keys[i]]) window.LogicFlow[_keys[i]] = Core[_keys[i]];
+  }
+  window.h = Core.h;
+  if (window.Extension) {
+    window.LogicFlow.MiniMap = Extension.MiniMap || Extension.default && Extension.default.MiniMap;
+  }
+</script>
+
+<!-- 打包的业务逻辑 -->
+<script src="dist/navigator.js"></script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>功能导航</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/core/lib/style/index.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/css/layui.css">
