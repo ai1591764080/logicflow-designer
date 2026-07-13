@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>功能导航</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/core/lib/style/index.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/css/layui.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        .main-container { flex: 1; display: flex; min-height: 0; }
+
+        /* 左侧导航分组面板 */
+        .nav-group-panel { width: 240px; background: #fff; border-right: 1px solid #e6e6e6; padding: 16px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .nav-group-header { padding-bottom: 12px; border-bottom: 1px solid #f0f2f5; margin-bottom: 12px; }
+        .panel-title { font-size: 16px; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; font-weight: bold; }
+        .nav-group-list { flex: 1; overflow-y: auto; }
+        .nav-group-item { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #333; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .nav-group-item:hover { background: #f0f7ff; color: #1e9fff; }
+        .nav-group-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
+        .nav-group-item i { font-size: 16px; }
+        .nav-group-footer { padding-top: 12px; border-top: 1px solid #f0f2f5; margin-top: 12px; }
+
+        /* 中间画布 */
+        .center-panel { flex: 1; background: #f0f4f8; position: relative; min-width: 0; }
+
+        /* 工具栏 */
+        .toolbar-area .layui-btn { border-radius: 6px; font-size: 13px; transition: all 0.2s; border-color: #e0e4ea; }
+        .toolbar-area .layui-btn-primary { background: #fff; color: #5a6170; }
+        .toolbar-area .layui-btn-primary:hover { background: #f0f7ff; border-color: #1e9fff; color: #1e9fff; }
+        .toolbar-area .layui-btn i { font-size: 15px; }
+        .toolbar-area .layui-btn-sm { height: 32px; line-height: 32px; padding: 0 10px; }
+        .toolbar-area .layui-btn-sm + .layui-btn-sm { margin-left: 2px; }
+        .toolbar-area .layui-btn-normal { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
+        .toolbar-area .layui-btn-normal:hover { background: #1890ff; color: #fff; }
+        .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: linear-gradient(to bottom, transparent, #dce1e8, transparent); margin: 0 8px; vertical-align: middle; }
+
+        /* 全屏模式 */
+        .fullscreen-mode .nav-group-panel { display: none; }
+        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
+
+        /* 隐藏 LogicFlow 的网格、选中框、调整手柄 */
+        .lf-grid { display: none !important; }
+        .lf-node-selected-outline { display: none !important; }
+        .lf-edge-adjust, .lf-node-adjust { display: none !important; }
+        .lf-anchor { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- 顶部工具栏 -->
+<div class="toolbar-area" style="height: 50px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 16px; line-height: 50px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center;">
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-in" title="放大"><i class="layui-icon layui-icon-addition"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fit" title="适应画布"><i class="layui-icon layui-icon-senior"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-reset" title="重置缩放"><i class="layui-icon layui-icon-refresh"></i></button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fullscreen" title="全屏模式"><i class="layui-icon layui-icon-screen-full"></i></button>
+    </div>
+    <span class="toolbar-divider"></span>
+    <div class="layui-btn-group">
+        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
+    </div>
+    <div style="margin-left: auto;">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-design"><i class="layui-icon layui-icon-set"></i> 设置</button>
+    </div>
+</div>
+
+<!-- 主体两栏布局 -->
+<div class="main-container">
+    <!-- 左侧导航分组 -->
+    <div class="nav-group-panel">
+        <div class="nav-group-header">
+            <div class="panel-title" style="margin-bottom: 0;">导航分组</div>
+        </div>
+        <div class="nav-group-list" id="nav-group-list">
+            <!-- 动态加载分组列表 -->
+        </div>
+        <div class="nav-group-footer">
+            <button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-set-group" style="border-radius: 6px;">
+                <i class="layui-icon layui-icon-set"></i> 设置分组
+            </button>
+        </div>
+    </div>
+
+    <!-- 中间画布 -->
+    <div class="center-panel">
+        <div id="graph" style="width: 100%; height: 100%;"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/layui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@logicflow/core@2.2.3/dist/index.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.css">
+<script src="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.min.js"></script>
+
+<!-- LogicFlow 2.x 全局变量兼容层 -->
+<script>
+  var LFConstructor = Core.default || Core.LogicFlow;
+  window.LogicFlow = LFConstructor;
+  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','LineEdge','LineEdgeModel','PolylineEdge','PolylineEdgeModel','BezierEdge','BezierEdgeModel'];
+  for (var i = 0; i < _keys.length; i++) {
+    if (Core[_keys[i]]) window.LogicFlow[_keys[i]] = Core[_keys[i]];
+  }
+  window.h = Core.h;
+  if (window.Extension) {
+    window.LogicFlow.MiniMap = Extension.MiniMap || Extension.default && Extension.default.MiniMap;
+  }
+</script>
+
+<!-- 打包的业务逻辑 -->
+<script src="dist/navigator.js"></script>
+
+</body>
+</html>
