@@ -452,6 +452,171 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // 初始化加载模块列表
   getModules();
 
+  // ========== 导航分组（展示模式） ==========
+  var _groupList = [];
+  var currentGroupId = null;
+
+  function getGroupList() {
+    var list = [];
+    $.ajax({
+      type: 'POST',
+      url: '/Common/Ashx/Common_Nav.ashx',
+      data: { act: 'Get_NavigatorGroup' },
+      async: false,
+      success: function (retData) {
+        if (!retData || retData === '') {
+          list = [
+            { ModuleGroupId: 1481, ModuleGroupName: '内部办公' },
+            { ModuleGroupId: 1482, ModuleGroupName: '客户管理' },
+            { ModuleGroupId: 1611, ModuleGroupName: '售前管理' },
+            { ModuleGroupId: 1650, ModuleGroupName: '销售管理' },
+            { ModuleGroupId: 1612, ModuleGroupName: '服务管理' }
+          ];
+        } else {
+          try {
+            list = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+          } catch (e) {
+            list = [];
+          }
+        }
+      },
+      error: function () {
+        list = [];
+      }
+    });
+    return list;
+  }
+
+  function loadGroupList() {
+    _groupList = getGroupList();
+    var html = '';
+    for (var i = 0; i < _groupList.length; i++) {
+      var item = _groupList[i];
+      var activeClass = (i === 0) ? ' active' : '';
+      html += '<div class="nav-group-item' + activeClass + '" data-group-id="' + item.ModuleGroupId + '">';
+      html += '<i class="layui-icon layui-icon-template-1"></i>' + item.ModuleGroupName;
+      html += '</div>';
+    }
+    document.getElementById('nav-group-list').innerHTML = html;
+
+    // 绑定点击事件
+    var items = document.querySelectorAll('.nav-group-item');
+    for (var j = 0; j < items.length; j++) {
+      items[j].onclick = function () {
+        var groupId = this.getAttribute('data-group-id');
+        currentGroupId = groupId;
+        // 移除其他项的 active 类
+        for (var k = 0; k < items.length; k++) {
+          items[k].classList.remove('active');
+        }
+        this.classList.add('active');
+        // TODO: 根据 groupId 加载对应的流程图数据
+        layer.msg('切换到分组：' + this.innerText.trim(), { icon: 0, time: 1500 });
+      };
+    }
+  }
+
+  function setGroup() {
+    var html = '';
+    html += "<div class='navigatorGroup' style='margin: 10px 20px;'>";
+    html += "<div class='navigatorSearch' style='margin: 0 20px; padding-bottom: 10px;'>";
+    html += '新名称：<input type="text" id="navigatorInput" class="layui-input" maxlength="120" autocomplete="off" placeholder="请输入分组名" style="width:159px;padding-left:3px;display:inline-block;vertical-align:middle;" >';
+    html += '<input type="button" id="navigatorAdd" class="layui-btn layui-btn-sm" value="添加" style="margin-left:6px;box-sizing:border-box;width:60px;">';
+    html += '</div>';
+    html += "<div class='navigatorBody' style='height: 316px;overflow: auto;padding: 0px 10px;'>";
+
+    for (var i = 0; i < _groupList.length; i++) {
+      html += '<div class="nameItem" style="margin-bottom: 10px;border: 1px solid #ccc;background: url(/images/picklistdrag.gif) no-repeat 5px;">';
+      html += '<input type="text" ModuleGroupId="' + _groupList[i].ModuleGroupId + '" value="' + _groupList[i].ModuleGroupName + '" class="layui-input" placeholder="请输入分组名" style="margin-left:10px;width: 85%;border: none;padding-left:3px;" >';
+      html += '<img alt="" style="border: 0px; cursor: pointer;position: relative;top: 2px;left: 13px;" title="删除" src="/images/picklistdeleteIcon.gif">';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    html += '</div>';
+
+    layer.open({
+      type: 1,
+      title: '设置分组',
+      content: html,
+      area: ['380px', '440px'],
+      btn: ['保存', '取消'],
+      yes: function (index) {
+        var saveData = [];
+        var $navigatorGroup = $('.navigatorGroup');
+        $navigatorGroup.find('.navigatorBody .nameItem .layui-input').each(function () {
+          saveData.push({
+            ModuleGroupId: $(this).attr('ModuleGroupId'),
+            ModuleGroupName: $(this).val()
+          });
+        });
+
+        if (saveData.length === 0) {
+          layer.msg('至少保留一个分组', { icon: 2 });
+          return;
+        }
+
+        $.ajax({
+          type: 'POST',
+          url: '/Common/Ashx/Common_Nav.ashx',
+          data: {
+            act: 'Save_NavigatorGroup',
+            saveData: JSON.stringify(saveData)
+          },
+          success: function () {
+            layer.msg('操作成功', { icon: 1 });
+            layer.close(index);
+            loadGroupList();
+          },
+          error: function () {
+            layer.msg('保存失败', { icon: 2 });
+          }
+        });
+      },
+      success: function (layero) {
+        var $navigatorGroup = $(layero).find('.navigatorGroup');
+        var $navigatorInput = $navigatorGroup.find('#navigatorInput');
+        var $navigatorAdd = $navigatorGroup.find('#navigatorAdd');
+        var $navigatorBody = $navigatorGroup.find('.navigatorBody');
+
+        $navigatorAdd.on('click', function () {
+          var idList = [];
+          $navigatorGroup.find('.navigatorBody .nameItem .layui-input').each(function () {
+            var oId = parseInt($(this).attr('ModuleGroupId'));
+            if (!isNaN(oId) && oId !== 0) {
+              idList.push(oId);
+            }
+          });
+          idList.sort(function (a, b) { return a - b; });
+          var nId = idList.pop();
+          if (nId === undefined) {
+            nId = 1;
+          } else {
+            nId = nId + 1;
+          }
+
+          $navigatorBody.append('<div class="nameItem" style="margin-bottom: 10px;border: 1px solid #ccc;background: url(/images/picklistdrag.gif) no-repeat 5px;">' +
+            '<input type="text" ModuleGroupId="' + nId + '" value="' + $navigatorInput.val() + '" class="layui-input" placeholder="请输入分组名" style="margin-left:10px;width: 85%;border: none;padding-left:3px;" >' +
+            '<img alt="" style="border: 0px; cursor: pointer;position: relative;top: 2px;left: 13px;" title="删除" src="/images/picklistdeleteIcon.gif">' +
+            '</div>');
+        });
+
+        // 绑定删除事件
+        $navigatorBody.on('click', '.nameItem img', function () {
+          $(this).parent().remove();
+        });
+      }
+    });
+  }
+
+  // 初始化加载分组列表
+  loadGroupList();
+
+  // 绑定设置分组按钮事件
+  document.getElementById('btn-set-group').onclick = function () {
+    setGroup();
+  };
+
   // 构建模块下拉 HTML
   function buildModuleOptions(moduleVal) {
     var html = '';
@@ -851,6 +1016,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       this.innerHTML = '<i class="layui-icon layui-icon-read"></i> 展示模式';
       this.classList.remove('layui-btn-warm');
       this.classList.add('layui-btn-primary');
+      // 恢复左侧节点面板，隐藏导航分组面板
+      document.getElementById('left-panel').style.display = '';
+      document.getElementById('nav-group-panel').style.display = 'none';
       // 恢复拖拽
       document.querySelectorAll('.node-item').forEach(function (item) {
         item.setAttribute('draggable', 'true');
@@ -898,6 +1066,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       this.innerHTML = '<i class="layui-icon layui-icon-edit"></i> 编辑模式';
       this.classList.remove('layui-btn-primary');
       this.classList.add('layui-btn-warm');
+      // 隐藏左侧节点面板，显示导航分组面板
+      document.getElementById('left-panel').style.display = 'none';
+      document.getElementById('nav-group-panel').style.display = 'flex';
       // 禁用左侧拖拽
       document.querySelectorAll('.node-item').forEach(function (item) {
         item.setAttribute('draggable', 'false');

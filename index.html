@@ -133,8 +133,8 @@
         .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
         .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
         /* 展示模式 */
-        .present-mode .left-panel, .present-mode .right-panel { display: none; }
-        .present-mode .center-panel { position: relative; flex: 1; }
+        .present-mode .left-panel { display: flex !important; width: 240px !important; padding: 16px !important; border-right: 1px solid #e6e6e6 !important; }
+        .present-mode .right-panel, .present-mode .center-panel { position: relative; flex: 1; }
         .present-mode .center-panel #graph { background: #f0f4f8; }
         .present-mode #btn-undo, .present-mode #btn-redo,
         .present-mode #btn-zoom-in, .present-mode #btn-zoom-out, .present-mode #btn-fit, .present-mode #btn-reset, .present-mode #btn-fullscreen,
@@ -156,6 +156,15 @@
         .module-selector select { width: 100%; height: 34px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 10px; font-size: 13px; color: #333; background: #fafbfc; cursor: pointer; outline: none; transition: border-color 0.2s; }
         .module-selector select:hover { border-color: #c0c6d0; }
         .module-selector select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
+        /* 展示模式左侧导航分组 */
+        .nav-group-container { display: flex; flex-direction: column; height: 100%; }
+        .nav-group-header { padding-bottom: 12px; border-bottom: 1px solid #f0f2f5; margin-bottom: 12px; }
+        .nav-group-list { flex: 1; overflow-y: auto; }
+        .nav-group-item { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #333; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .nav-group-item:hover { background: #f0f7ff; color: #1e9fff; }
+        .nav-group-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
+        .nav-group-item i { font-size: 16px; }
+        .nav-group-footer { padding-top: 12px; border-top: 1px solid #f0f2f5; margin-top: 12px; }
 
         .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: linear-gradient(to bottom, transparent, #dce1e8, transparent); margin: 0 8px; vertical-align: middle; }
         /* 工具栏按钮优化 */
@@ -246,6 +255,23 @@
             <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div></div>
         </div>
         <button id="toggle-left" class="toggle-btn left-toggle" title="收起/展开左侧面板"><i class="layui-icon layui-icon-left"></i></button>
+    </div>
+
+    <!-- 展示模式左侧导航分组面板（默认隐藏） -->
+    <div class="left-panel" id="nav-group-panel" style="display: none;">
+        <div class="nav-group-container">
+            <div class="nav-group-header">
+                <div class="panel-title" style="margin-bottom: 0;">导航分组</div>
+            </div>
+            <div class="nav-group-list" id="nav-group-list">
+                <!-- 动态加载分组列表 -->
+            </div>
+            <div class="nav-group-footer">
+                <button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-set-group" style="border-radius: 6px;">
+                    <i class="layui-icon layui-icon-set"></i> 设置分组
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- 中间画布 -->
