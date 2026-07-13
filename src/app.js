@@ -996,8 +996,63 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // 保存发布
   document.getElementById('btn-save').onclick = function () {
-    document.getElementById('btn-validate').click();
-    console.log('提交:', lf.getGraphData());
+    // 1. 校验画布数据
+    var data = lf.getGraphData();
+    if (!data.nodes || data.nodes.length === 0) {
+      return layer.msg('画布为空，无法保存！', { icon: 2 });
+    }
+
+    // 2. 校验开始节点和结束节点
+    var starts = data.nodes.filter(function (n) { return n.type === 'start-node'; });
+    var ends = data.nodes.filter(function (n) { return n.type === 'end-node'; });
+    if (starts.length !== 1) {
+      return layer.msg('必须包含且仅包含一个【开始节点】！', { icon: 2 });
+    }
+    if (ends.length !== 1) {
+      return layer.msg('必须包含且仅包含一个【结束节点】！', { icon: 2 });
+    }
+
+    // 3. 校验所有节点是否已分配模块
+    var unassignedNodes = [];
+    for (var i = 0; i < data.nodes.length; i++) {
+      var node = data.nodes[i];
+      var props = node.properties || {};
+      if (!props.module || props.module === '') {
+        var nodeName = (node.text && node.text.value) || node.id;
+        unassignedNodes.push(nodeName);
+      }
+    }
+    if (unassignedNodes.length > 0) {
+      return layer.msg('以下节点未分配模块：' + unassignedNodes.join('、'), { icon: 2, time: 5000 });
+    }
+
+    // 4. 校验是否已选择导航分组
+    if (!currentGroupId) {
+      return layer.msg('请先在左侧选择一个导航分组！', { icon: 2 });
+    }
+
+    // 5. 确认保存
+    layer.confirm('确定要保存当前流程图吗？', { icon: 3, title: '保存确认' }, function (index) {
+      layer.close(index);
+      var jsonStr = JSON.stringify(data);
+
+      // 6. 调用接口保存
+      $.ajax({
+        type: 'POST',
+        url: '/Common/Ashx/Common_Nav.ashx',
+        data: {
+          act: 'Save_Navigator_DiagramData',
+          moduleGroupId: currentGroupId,
+          data: jsonStr
+        },
+        success: function (retData) {
+          layer.msg('保存成功！', { icon: 1, time: 2000 });
+        },
+        error: function () {
+          layer.msg('保存失败，请重试！', { icon: 2 });
+        }
+      });
+    });
   };
 
   // ========== 编辑模式 / 展示模式切换 ==========
