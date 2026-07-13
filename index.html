@@ -133,8 +133,9 @@
         .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
         .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
         /* 展示模式 */
-        .present-mode .left-panel { display: flex !important; width: 240px !important; padding: 16px !important; border-right: 1px solid #e6e6e6 !important; }
-        .present-mode .right-panel, .present-mode .center-panel { position: relative; flex: 1; }
+        .present-mode #left-panel { display: none !important; }
+        .present-mode #nav-group-panel { display: flex !important; width: 240px !important; padding: 16px !important; border-right: 1px solid #e6e6e6 !important; }
+        .present-mode .right-panel { display: none; }
         .present-mode .center-panel #graph { background: #f0f4f8; }
         .present-mode #btn-undo, .present-mode #btn-redo,
         .present-mode #btn-zoom-in, .present-mode #btn-zoom-out, .present-mode #btn-fit, .present-mode #btn-reset, .present-mode #btn-fullscreen,
