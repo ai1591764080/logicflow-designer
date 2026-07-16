@@ -59,7 +59,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     pluginsOptions: LogicFlow.MiniMap ? {
       miniMap: {
         width: 150, height: 120, showEdge: true, isShowCloseIcon: true,
-        rightPosition: 10, bottomPosition: 10
+        rightPosition: 300, bottomPosition: 10
       }
     } : {},
   });
@@ -70,25 +70,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       hover: { r: 8, fill: '#1890ff' }
     }
   });
-
-  // 检查并确保 MiniMap 插件可用
-  if (!lf.extension || !lf.extension.miniMap) {
-    // 尝试从 Extension 全局对象获取并手动注册
-    var MiniMapCls = (window.Extension && window.Extension.MiniMap) || LogicFlow.MiniMap;
-    if (MiniMapCls) {
-      try {
-        lf.installPlugin(MiniMapCls, {
-          width: 150, height: 120, showEdge: true, isShowCloseIcon: true,
-          rightPosition: 10, bottomPosition: 10
-        });
-        console.log('[Navigator] MiniMap manually installed');
-      } catch(e) {
-        console.warn('[Navigator] installPlugin failed:', e);
-      }
-    } else {
-      console.warn('[Navigator] MiniMap class not found');
-    }
-  }
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
@@ -233,6 +214,45 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   setTimeout(function() { lf.resize(); }, 100);
   window.lf = lf;
 
+  // 确保 MiniMap 插件已安装并显示
+  (function ensureMiniMap() {
+    var MiniMapCls = (window.Extension && window.Extension.MiniMap) || LogicFlow.MiniMap;
+    console.log('[MiniMap] 检查插件:', MiniMapCls, '| lf.extension:', lf.extension);
+    if (!MiniMapCls) {
+      console.warn('[MiniMap] 插件类未找到');
+      return;
+    }
+    // 检查是否已安装
+    if (lf.extension && lf.extension.miniMap) {
+      console.log('[MiniMap] 插件已安装，尝试显示');
+      try {
+        lf.extension.miniMap.show();
+        console.log('[MiniMap] 显示成功');
+      } catch(e) {
+        console.warn('[MiniMap] show() 失败:', e);
+      }
+      return;
+    }
+    // 尝试手动安装
+    console.log('[MiniMap] 尝试手动安装插件');
+    try {
+      lf.installPlugin(MiniMapCls, {
+        width: 150, height: 120, showEdge: true, isShowCloseIcon: true,
+        rightPosition: 300, bottomPosition: 10
+      });
+      console.log('[MiniMap] 安装成功, lf.extension:', lf.extension);
+      // 安装后显示
+      if (lf.extension && lf.extension.miniMap) {
+        setTimeout(function() {
+          lf.extension.miniMap.show();
+          console.log('[MiniMap] 延迟显示成功');
+        }, 100);
+      }
+    } catch(e) {
+      console.warn('[MiniMap] 安装失败:', e);
+    }
+  })();
+
   // ========== 模块列表（远程加载） ==========
   var _moduleList = [];
   function getModules() {
@@ -241,8 +261,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       data: { act: 'GetAllChildMenu' },
       success: function (retData) {
         try { _moduleList = (typeof retData === 'string') ? JSON.parse(retData) : retData; } catch (e) { _moduleList = []; }
+        console.log('[Navigator] 模块加载成功:', _moduleList.length, '条');
       },
-      error: function () { _moduleList = []; }
+      error: function (xhr, status, err) { 
+        console.error('[Navigator] 模块加载失败:', status, err); 
+        _moduleList = []; 
+      }
     });
   }
   getModules();
@@ -253,10 +277,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     for (var i = 0; i < _moduleList.length; i++) {
       var item = _moduleList[i];
       var selected = (String(item.Id) === String(moduleVal)) ? ' selected' : '';
-      html += '<option value="' + item.Id + '" flag="' + item.Flag + '"' + selected + '>' + item.Name + '</option>';
+      html += '<option value="' + item.Id + '" data-flag="' + item.Flag + '" data-sectionid="' + (item.SectionId || 0) + '" data-name="' + item.Name + '"' + selected + '>' + item.Name + '</option>';
     }
     return html;
   }
+
+
 
   // ========== 导航分组 ==========
   var _groupList = [];
@@ -266,7 +292,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var list = [];
     $.ajax({
       type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-      data: { act: 'Get_NavigatorGroup' }, async: false,
+      data: { act: 'Get_NavigatorGroupNew' }, async: false,
       success: function (retData) {
         if (!retData || retData === '') {
           list = [
@@ -282,14 +308,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       },
       error: function () { list = []; }
     });
-    // 如果接口失败，尝试从 localStorage 读取缓存
-    if (!list || list.length === 0) {
-      var cached = localStorage.getItem('navigator_groups');
-      if (cached) {
-        try { list = JSON.parse(cached); } catch (e) { list = []; }
-      }
-    }
-    // 如果 localStorage 也没有，使用默认数据
+    // 如果接口失败，使用默认数据
     if (!list || list.length === 0) {
       list = [
         { ModuleGroupId: 1481, ModuleGroupName: '内部办公' },
@@ -373,44 +392,27 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // ========== 加载分组流程图数据 ==========
   function loadGroupFlow(groupId) {
-    // TODO: 后续替换为真实接口调用
-    // 当前使用 localStorage 模拟
-    var storageKey = 'navigator_flow_' + groupId;
-    var cachedData = localStorage.getItem(storageKey);
-    
-    if (cachedData) {
-      try {
-        var data = JSON.parse(cachedData);
-        lf.render(data);
-      } catch (e) {
-        lf.render({ nodes: [], edges: [] });
-      }
-    } else {
-      // 尝试从接口加载
-      $.ajax({
-        type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-        data: { act: 'Get_Navigator_DiagramData', moduleGroupId: groupId },
-        async: false,
-        success: function (retData) {
-          if (retData && retData !== '') {
-            try {
-              var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
-              lf.render(data);
-              // 缓存到 localStorage
-              localStorage.setItem(storageKey, JSON.stringify(data));
-            } catch (e) {
-              lf.render({ nodes: [], edges: [] });
-            }
-          } else {
+    $.ajax({
+      type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
+      data: { act: 'Get_Navigator_DiagramData', moduleGroupId: groupId },
+      async: false,
+      success: function (retData) {
+        if (retData && retData !== '') {
+          try {
+            var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+            lf.render(data);
+          } catch (e) {
             lf.render({ nodes: [], edges: [] });
           }
-          setTimeout(function() { lf.resize(); }, 100);
-        },
-        error: function () {
+        } else {
           lf.render({ nodes: [], edges: [] });
         }
-      });
-    }
+        setTimeout(function() { lf.resize(); }, 100);
+      },
+      error: function () {
+        lf.render({ nodes: [], edges: [] });
+      }
+    });
     setTimeout(function() { lf.resize(); }, 100);
     clearPanel();
   }
@@ -448,6 +450,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         edgeTextDraggable: false,
         hideAnchors: true,
       });
+      // 重置画布缩放和位置
+      lf.resetZoom();
+      lf.resetTranslate();
     } else {
       // 设计模式: 显示图形/属性/工具栏, 隐藏分组
       if (shapesSection) shapesSection.style.display = 'block';
@@ -484,7 +489,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // 弹窗内样式
   var groupStyle = '<style>' +
-    '.navigatorGroup { padding: 0 16px 10px; }' +
+    '.navigatorGroup { padding: 10px 16px 10px; }' +
     '.navigatorSearch { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }' +
     '.navigatorSearch input[type="text"] { flex: 1; }' +
     '.navigatorBody { max-height: 340px; overflow-y: auto; padding: 0 2px; }' +
@@ -515,7 +520,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     html += '</div></div>';
 
     layer.open({
-      type: 1, title: '设置分组', content: html, area: ['400px', '480px'], btn: ['保存', '取消'],
+      type: 1, title: '设置分组', content: html, area: ['400px', '520px'], btn: ['保存', '取消'],
       yes: function (index) {
         var saveData = [];
         var $navigatorGroup = $('.navigatorGroup');
@@ -525,15 +530,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           if (name) saveData.push({ ModuleGroupId: $input.attr('ModuleGroupId'), ModuleGroupName: name });
         });
         if (saveData.length === 0) { layer.msg('至少保留一个分组', { icon: 2 }); return; }
-        // TODO: 后续替换为真实接口调用，当前使用 localStorage 模拟
-        localStorage.setItem('navigator_groups', JSON.stringify(saveData));
         $.ajax({
           type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-          data: { act: 'Save_NavigatorGroup', saveData: JSON.stringify(saveData) },
+          data: { act: 'Save_NavigatorGroupNew', saveData: JSON.stringify(saveData) },
           success: function () { layer.msg('操作成功', { icon: 1 }); layer.close(index); loadGroupList(); },
-          error: function () {
-            // 接口失败时使用 localStorage 缓存
-            layer.msg('已保存到本地缓存', { icon: 1 });
+          error: function () { 
+            layer.msg('保存失败', { icon: 1 });
             layer.close(index);
             loadGroupList();
           }
@@ -654,14 +656,15 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var props = data.properties || {};
     var colors = defaultColors[data.type] || { fill: '#ffffff', stroke: '#333333' };
     var textVal = (data.text && data.text.value) || '';
-    var moduleVal = props.module || (_moduleList.length > 0 ? String(_moduleList[0].Id) : '');
+    var mInfo = props.moduleInfo || {};
+    var moduleVal = mInfo.Id || props.module || (_moduleList.length > 0 ? String(_moduleList[0].Id) : '');
 
     document.getElementById('props-content').innerHTML =
       '<form class="layui-form" lay-filter="propsForm">' +
         '<div class="props-section"><div class="props-section-title">基本信息</div>' +
           '<div class="layui-form-item"><label class="layui-form-label">节点 ID</label><div class="layui-input-block"><input type="text" value="' + data.id + '" disabled class="layui-input layui-disabled"></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">节点文本</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" class="layui-input"></div></div>' +
-          '<div class="layui-form-item"><label class="layui-form-label">所属模块</label><div class="layui-input-block"><select name="module">' + buildModuleOptions(moduleVal) + '</select></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">所属模块</label><div class="layui-input-block">' + '<select name="module" lay-search lay-filter="module">' + buildModuleOptions(moduleVal) + '</select>' + '</div></div>' +
         '</div>' +
         '<div class="props-section"><div class="props-section-title">详细描述</div>' +
           '<div class="layui-form-item"><label class="layui-form-label">负责人</label><div class="layui-input-block"><input type="text" name="owner" value="' + (props.owner || '') + '" placeholder="请输入负责人" class="layui-input"></div></div>' +
@@ -676,7 +679,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
           '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除节点</button>' +
         '</div></form>';
-    form.render();
+    form.render('select');
+    console.log('[Navigator] 渲染节点面板, 模块数:', _moduleList.length);
 
     colorpicker.render({ elem: '#node-fill-color', color: props.fill || colors.fill, done: function (c) { lf.setProperties(data.id, { fill: c }); } });
     colorpicker.render({ elem: '#node-stroke-color', color: props.stroke || colors.stroke, done: function (c) { lf.setProperties(data.id, { stroke: c }); } });
@@ -773,7 +777,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var f = obj.field;
     if (currentElementType === 'node') {
       lf.updateText(currentElementId, f.text);
-      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: currentNodeTextColor, module: f.module });
+      // 获取选中模块的完整信息，以对象形式保存
+      var $sel = $('#props-content select[name="module"]');
+      var $opt = $sel.find('option:selected');
+      var moduleInfo = {
+        Id: parseInt(f.module) || 0,
+        Flag: parseInt($opt.attr('data-flag')) || 0,
+        SectionId: parseInt($opt.attr('data-sectionid')) || 0,
+        Name: $opt.attr('data-name') || ''
+      };
+      lf.setProperties(currentElementId, { owner: f.owner, desc: f.desc, textColor: currentNodeTextColor, moduleInfo: moduleInfo });
     } else if (currentElementType === 'edge') {
       lf.updateText(currentElementId, f.text);
       var needReselect = false;
@@ -846,21 +859,24 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   if (ctbFit) ctbFit.onclick = function () { lf.fitView(80); };
   if (ctbReset) ctbReset.onclick = function () { lf.resetZoom(); };
 
-  // 小地图
-  var miniMapVisible = false;
+  // 小地图（默认显示）
+  var miniMapVisible = true;
   var ctbMinimap = document.getElementById('ctb-minimap');
-  if (ctbMinimap) ctbMinimap.onclick = function () {
-    if (!lf.extension || !lf.extension.miniMap) {
-      return layer.msg('小地图插件未加载', { icon: 2 });
-    }
-    if (miniMapVisible) {
-      lf.extension.miniMap.hide(); miniMapVisible = false;
-      this.style.background = '';
-    } else {
-      lf.extension.miniMap.show(); miniMapVisible = true;
-      this.style.background = '#f0f7ff';
-    }
-  };
+  if (ctbMinimap) {
+    ctbMinimap.classList.add('active'); // 初始高亮
+    ctbMinimap.onclick = function () {
+      if (!lf.extension || !lf.extension.miniMap) {
+        return layer.msg('小地图插件未加载', { icon: 2 });
+      }
+      if (miniMapVisible) {
+        lf.extension.miniMap.hide(); miniMapVisible = false;
+        this.classList.remove('active');
+      } else {
+        lf.extension.miniMap.show(); miniMapVisible = true;
+        this.classList.add('active');
+      }
+    };
+  }
 
   // 边类型切换
   var ctbEdgeType = document.getElementById('ctb-edge-type');
@@ -884,20 +900,19 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var unassignedNodes = [];
     for (var i = 0; i < data.nodes.length; i++) {
       var node = data.nodes[i], props = node.properties || {};
-      if (!props.module || props.module === '') unassignedNodes.push((node.text && node.text.value) || node.id);
+      var mi = props.moduleInfo || {};
+      if (!mi.Id && (!props.module || props.module === '')) unassignedNodes.push((node.text && node.text.value) || node.id);
     }
     //if (unassignedNodes.length > 0) return layer.msg('以下节点未分配模块：' + unassignedNodes.join('、'), { icon: 2, time: 5000 });
     if (!currentGroupId) return layer.msg('请先选择一个导航分组！', { icon: 2 });
     layer.confirm('确定要保存当前导航图吗？', { icon: 3, title: '保存确认' }, function (index) {
       layer.close(index);
       var jsonStr = JSON.stringify(data);
-      var storageKey = 'navigator_flow_' + currentGroupId;
-      localStorage.setItem(storageKey, jsonStr);
       $.ajax({
         type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-        data: { act: 'Save_Navigator_DiagramData', moduleGroupId: currentGroupId, data: jsonStr },
+        data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, data: jsonStr },
         success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
-        error: function () { layer.msg('已保存到本地缓存', { icon: 1, time: 2000 }); }
+        error: function () { layer.msg('保存失败!', { icon: 1, time: 2000 }); }
       });
     });
   };
