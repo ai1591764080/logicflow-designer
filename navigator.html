@@ -3,84 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>功能导航设计</title>
+    <title>功能导航</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/core/lib/style/index.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/css/layui.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-
         .main-container { flex: 1; display: flex; min-height: 0; }
 
-        /* 左侧面板：分组导航 + 基础图形 */
-        .left-panel { width: 280px; background: #fff; border-right: 1px solid #e6e6e6; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; position: relative; display: flex; flex-direction: column; }
-        .left-panel.collapsed { width: 0; overflow: hidden; border-right: none; }
+        /* 左侧面板 */
+        .left-panel { width: 220px; background: #fff; border-right: 1px solid #e6e6e6; display: flex; flex-direction: column; flex-shrink: 0; position: relative; }
 
-        /* 分组导航区 */
-        .nav-group-section { padding: 16px; border-bottom: 1px solid #f0f2f5; flex-shrink: 0; }
-        .panel-title { font-size: 16px; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; font-weight: bold; }
-        .nav-group-list { max-height: 200px; overflow-y: auto; }
-        .nav-group-item { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #333; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-        .nav-group-item:hover { background: #f0f7ff; color: #1e9fff; }
-        .nav-group-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
-        .nav-group-item i { font-size: 16px; }
-        .nav-group-footer { margin-top: 10px; }
+        /* 分组树区域 */
+        .nav-tree-section { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .nav-tree-title { font-size: 14px; font-weight: 600; color: #333; padding: 4px 16px 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .nav-tree-title i { font-size: 12px; color: #999; }
+        .nav-tree-list { padding: 0 8px; }
+        .nav-tree-item { padding: 6px 12px 6px 24px; font-size: 13px; color: #555; cursor: pointer; border-radius: 4px; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+        .nav-tree-item:hover { background: #f0f7ff; color: #1e9fff; }
+        .nav-tree-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
+        .nav-tree-item i { font-size: 12px; color: #fa8c16; }
 
-        /* 基础图形区 */
-        .shapes-section { padding: 16px; flex: 1; overflow-y: auto; }
-        .node-item {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; height: 65px; margin-bottom: 10px;
-            border: none; border-radius: 4px;
-            cursor: grab; background: transparent; transition: all 0.2s; user-select: none;
-        }
-        .node-item:hover { background: transparent; }
+        /* 底部设置分组按钮 */
+        .nav-tree-footer { padding: 10px 12px; border-top: 1px solid #f0f2f5; flex-shrink: 0; }
+        .btn-set-group-bottom { width: 100%; height: 34px; border: 1px solid #d9d9d9; border-radius: 17px; background: #fff; color: #666; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+        .btn-set-group-bottom:hover { border-color: #1e9fff; color: #1e9fff; }
+        .btn-set-group-bottom i { font-size: 14px; color: #bbb; }
+
+        /* 基础图形区（设计模式） */
+        .shapes-section { padding: 12px; flex: 1; overflow-y: auto; }
+        .shapes-section .shapes-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1e9fff; }
+        .base-shapes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .node-item { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 56px; border: none; border-radius: 4px; cursor: grab; background: transparent; user-select: none; }
         .node-item:hover .node-text { color: #1e9fff; }
         .node-item:active { cursor: grabbing; }
-        .base-shapes-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
-        }
-        .base-shapes-grid .node-item {
-            height: 60px; margin-bottom: 0;
-            border: none; background: transparent;
-        }
-        .base-shapes-grid .node-item:hover {
-            border: none; box-shadow: none; background: transparent; border-radius: 4px;
-        }
         .base-shapes-grid .node-text { display: none; }
-        .base-shapes-grid .node-shape { margin-bottom: 0; }
-        .node-shape { width: 34px; height: 34px; margin-bottom: 4px; }
-        .node-text { font-size: 12px; color: #333; transition: color 0.2s; }
-
+        .node-shape { width: 32px; height: 32px; }
         .shape-base-rect { border-radius: 2px; border: 2px solid #666; background: #fff; }
-        .shape-oblong { border-radius: 4px; border: 2px solid #666; background: #fff; width: 44px; height: 22px; }
-        .shape-sharp-rect { border-radius: 0; border: 2px solid #666; background: #fff; width: 46px; height: 22px; }
-        .shape-round-rect { border-radius: 10px; border: 2px solid #666; background: #fff; width: 46px; height: 22px; }
-        .shape-document {
-            width: 42px; height: 28px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='28'%3E%3Cpath d='M1 1H41V19C33 12 28 12 21 19C14 26 9 26 1 19Z' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
-            background-size: 100% 100%;
-        }
-        .shape-subprocess { width: 42px; height: 26px; border: 2px solid #666; background: #fff; position: relative; }
-        .shape-subprocess::before, .shape-subprocess::after {
-            content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: #666;
-        }
+        .shape-oblong { border-radius: 4px; border: 2px solid #666; background: #fff; width: 42px; height: 20px; }
+        .shape-sharp-rect { border-radius: 0; border: 2px solid #666; background: #fff; width: 44px; height: 20px; }
+        .shape-round-rect { border-radius: 10px; border: 2px solid #666; background: #fff; width: 44px; height: 20px; }
+        .shape-document { width: 40px; height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='28'%3E%3Cpath d='M1 1H41V19C33 12 28 12 21 19C14 26 9 26 1 19Z' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center; background-size: 100% 100%; }
+        .shape-subprocess { width: 40px; height: 24px; border: 2px solid #666; background: #fff; position: relative; }
+        .shape-subprocess::before, .shape-subprocess::after { content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: #666; }
         .shape-subprocess::before { left: 6px; }
         .shape-subprocess::after { right: 6px; }
-        .shape-internal-storage {
-            width: 42px; height: 26px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='26'%3E%3Crect x='1' y='1' width='40' height='24' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='1' y1='8' x2='41' y2='8' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='10' y1='1' x2='10' y2='25' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
-            background-size: 100% 100%;
-        }
-        .shape-base-circle { border-radius: 50%; border: 2px solid #666; background: #fff; }
-        .shape-base-diamond { width: 26px; height: 26px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin-bottom: 10px; }
+        .shape-internal-storage { width: 40px; height: 24px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='26'%3E%3Crect x='1' y='1' width='40' height='24' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='1' y1='8' x2='41' y2='8' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='10' y1='1' x2='10' y2='25' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center; background-size: 100% 100%; }
+        .shape-base-circle { border-radius: 50%; border: 2px solid #666; background: #fff; width: 30px; height: 30px; }
+        .shape-base-diamond { width: 24px; height: 24px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin: 4px auto; }
 
-        .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; }
-        .right-panel { width: 290px; background: #fff; border-left: 1px solid #e8ecf0; padding: 0; overflow-y: auto; transition: width 0.3s; flex-shrink: 0; }
-        .right-panel.collapsed { width: 0; padding: 0; overflow: hidden; border-left: none; }
-        .right-panel .panel-title { font-size: 14px; color: #1a1a2e; margin: 0; padding: 14px 20px; border-bottom: 1px solid #eef1f5; font-weight: 600; background: #fafbfc; position: sticky; top: 0; z-index: 1; display: flex; align-items: center; }
-        .right-panel .panel-title i { margin-right: 8px; color: #1e9fff; font-size: 18px; }
-        #props-content { padding: 0; }
+        /* 中间画布 */
+        .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* 右侧属性面板 */
+        .right-panel { width: 290px; background-color: #ffffff !important; background: #ffffff !important; border-left: 1px solid #e8ecf0; padding: 0; overflow-y: auto; flex-shrink: 0; display: none; }
+        .right-panel.collapsed { width: 0; overflow: hidden; border-left: none; }
+        .right-panel .panel-title { font-size: 14px; color: #1a1a2e; margin: 0; padding: 14px 20px; border-bottom: 1px solid #eef1f5; font-weight: 600; background: #fafbfc !important; position: sticky; top: 0; z-index: 1; }
+        .right-panel #props-content { padding: 0; background: #ffffff !important; min-height: 200px; }
         .props-section { padding: 16px 20px; border-bottom: 1px solid #f2f4f7; }
         .props-section:last-child { border-bottom: none; }
         .props-section-title { font-size: 12px; color: #8c93a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
@@ -89,118 +68,108 @@
         #props-content .layui-form-item:last-child { margin-bottom: 0; }
         #props-content .layui-form-label { width: 72px; padding: 0; text-align: left; font-size: 13px; color: #5a6170; flex-shrink: 0; line-height: 34px; }
         #props-content .layui-input-block { margin-left: 82px; flex: 1; }
-        #props-content .layui-input { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; transition: all 0.2s; padding: 0 10px; }
-        #props-content .layui-input:hover { border-color: #c0c6d0; }
+        #props-content .layui-input { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 0 10px; }
         #props-content .layui-input:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
-        #props-content .layui-input[disabled] { background: #f0f2f5; color: #999; border-color: #e8e8e8; }
-        #props-content .layui-textarea { min-height: 64px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 8px 10px; transition: all 0.2s; resize: vertical; }
-        #props-content .layui-textarea:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
-        #props-content .layui-select { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; background: #fafbfc; }
-        #props-content .layui-select:hover { border-color: #c0c6d0; }
+        #props-content .layui-input[disabled] { background: #f0f2f5; color: #999; }
+        #props-content .layui-textarea { min-height: 64px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 8px 10px; resize: vertical; }
         .props-actions { padding: 16px 20px; background: #fafbfc; border-top: 1px solid #f2f4f7; position: sticky; bottom: 0; }
         .props-actions .layui-btn { border-radius: 6px; font-size: 13px; height: 36px; }
         .props-actions .layui-btn + .layui-btn { margin-left: 8px; }
         .color-field { display: flex; align-items: center; gap: 8px; }
         .color-field .layui-colorpicker { width: 28px; height: 28px; border-radius: 6px; }
-        #props-content hr { border-color: transparent; border-top: 1px solid #f2f4f7; margin: 0; }
         .empty-tip { color: #b0b8c5; text-align: center; padding: 80px 30px 0; font-size: 13px; line-height: 2; }
         .empty-tip i { font-size: 48px; color: #dce1e8; display: block; margin-bottom: 16px; }
-        .props-help { padding: 16px 20px; color: #9aa1ae; font-size: 12px; line-height: 2; }
-        .props-help p { margin: 0; }
-        .props-help b { color: #6b7280; }
-        .props-help kbd { display: inline-block; padding: 1px 5px; font-size: 11px; background: #f0f2f5; border: 1px solid #e0e4ea; border-radius: 3px; color: #5a6170; font-family: monospace; }
 
-        .toggle-btn {
-            position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
-            width: 16px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center;
-            background: #fff; border: 1px solid #e6e6e6; cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-        .toggle-btn:hover { background: #f0f9ff; border-color: #1e9fff; box-shadow: 0 0 6px rgba(30,159,255,0.2); }
+        /* 折叠按钮 */
+        .toggle-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; width: 16px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #e6e6e6; cursor: pointer; }
+        .toggle-btn:hover { background: #f0f9ff; border-color: #1e9fff; }
         .toggle-btn i { font-size: 12px; color: #999; }
-        .toggle-btn:hover i { color: #1e9fff; }
-        .left-toggle { right: -17px; border-radius: 0 4px 4px 0; border-left: none; }
         .right-toggle { left: -17px; border-radius: 4px 0 0 4px; border-right: none; }
 
+        /* 画布工具栏（设计模式） */
+        .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: none; align-items: center; gap: 4px; flex-shrink: 0; }
+        .canvas-toolbar .tb-btn { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #e0e4ea; border-radius: 4px; background: #fff; color: #5a6170; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+        .canvas-toolbar .tb-btn:hover { border-color: #1e9fff; color: #1e9fff; background: #f0f7ff; }
+        .canvas-toolbar .tb-btn i { font-size: 14px; }
+        .canvas-toolbar .tb-divider { width: 1px; height: 20px; background: #e8ecf0; margin: 0 4px; }
+        .canvas-toolbar .tb-select { height: 28px; border: 1px solid #e0e4ea; border-radius: 4px; padding: 0 8px; font-size: 12px; color: #5a6170; background: #fff; outline: none; cursor: pointer; }
+        .canvas-toolbar .tb-select:hover { border-color: #1e9fff; }
+        .canvas-toolbar .tb-btn.tb-save { background: #1e9fff; border-color: #1e9fff; color: #fff; margin-left: auto; }
+        .canvas-toolbar .tb-btn.tb-save:hover { background: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export:hover { background: #1890ff; color: #fff; }
         .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
-        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
+        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 44px; width: 100%; height: calc(100vh - 44px); z-index: 100; }
 
-        .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: linear-gradient(to bottom, transparent, #dce1e8, transparent); margin: 0 8px; vertical-align: middle; }
-        .toolbar-area .layui-btn { border-radius: 6px; font-size: 13px; transition: all 0.2s; border-color: #e0e4ea; }
-        .toolbar-area .layui-btn-primary { background: #fff; color: #5a6170; }
-        .toolbar-area .layui-btn-primary:hover { background: #f0f7ff; border-color: #1e9fff; color: #1e9fff; }
-        .toolbar-area .layui-btn i { font-size: 15px; }
-        .toolbar-area .layui-btn-sm { height: 32px; line-height: 32px; padding: 0 10px; }
-        .toolbar-area .layui-btn-sm + .layui-btn-sm { margin-left: 2px; }
-        .toolbar-area #btn-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
-        .toolbar-area #btn-export:hover { background: #1890ff; color: #fff; }
-        .toolbar-area #btn-save { background: #1e9fff; border-color: #1e9fff; color: #fff; }
-        .toolbar-area #btn-save:hover { background: #1890ff; border-color: #1890ff; }
-        .toolbar-area .toolbar-select, .toolbar-area #edge-type-select { height: 32px; border: 1px solid #e0e4ea; border-radius: 6px; padding: 0 12px; font-size: 13px; color: #5a6170; background: #fff; cursor: pointer; outline: none; transition: all 0.2s; min-width: 100px; vertical-align: middle; line-height: 32px; }
-        .toolbar-area .toolbar-select:hover, .toolbar-area #edge-type-select:hover { border-color: #1e9fff; color: #1e9fff; }
-        .toolbar-area .toolbar-select:focus, .toolbar-area #edge-type-select:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); }
+        /* 顶部栏 */
+        .top-bar { height: 44px; background: #fff; border-bottom: 1px solid #e8ecf0; display: flex; align-items: center; padding: 0 16px; flex-shrink: 0; }
+        .top-bar-logo { width: 32px; height: 32px; background: #1890ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+        .top-bar-logo i { color: #fff; font-size: 18px; }
+        .top-bar-title { font-size: 15px; font-weight: 600; color: #333; margin-right: 24px; white-space: nowrap; }
+        .top-bar-select { width: 160px; height: 30px; border: 1px solid #d9d9d9; border-radius: 4px; padding: 0 8px; font-size: 13px; color: #333; background: #fff; outline: none; cursor: pointer; }
+        .top-bar-select:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,0.1); }
+        .top-bar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .top-bar-actions .btn-action { height: 30px; padding: 0 16px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; cursor: pointer; background: #fff; color: #333; transition: all 0.2s; }
+        .top-bar-actions .btn-action:hover { border-color: #1890ff; color: #1890ff; }
+        .top-bar-actions .btn-action.btn-primary { background: #1890ff; border-color: #1890ff; color: #fff; }
+        .top-bar-actions .btn-action.btn-primary:hover { background: #40a9ff; border-color: #40a9ff; color: #fff; }
 
+        /* 画布工具栏（设计模式） */
+        .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: none; align-items: center; gap: 4px; flex-shrink: 0; }
+        .canvas-toolbar .tb-btn { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #e0e4ea; border-radius: 4px; background: #fff; color: #5a6170; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+        .canvas-toolbar .tb-btn:hover { border-color: #1e9fff; color: #1e9fff; background: #f0f7ff; }
+        .canvas-toolbar .tb-btn i { font-size: 14px; }
+        .canvas-toolbar .tb-divider { width: 1px; height: 20px; background: #e8ecf0; margin: 0 4px; }
+        .canvas-toolbar .tb-select { height: 28px; border: 1px solid #e0e4ea; border-radius: 4px; padding: 0 8px; font-size: 12px; color: #5a6170; background: #fff; outline: none; cursor: pointer; }
+        .canvas-toolbar .tb-select:hover { border-color: #1e9fff; }
+        .canvas-toolbar .tb-btn.tb-save { background: #1e9fff; border-color: #1e9fff; color: #fff; margin-left: auto; }
+        .canvas-toolbar .tb-btn.tb-save:hover { background: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export:hover { background: #1890ff; color: #fff; }
+
+        /* 模式控制 */
+        .mode-view .edit-only { display: none !important; }
+        .mode-design .view-only { display: none !important; }
+        .mode-view .lf-grid { display: none !important; }
+        .mode-view .lf-node-selected-outline { display: none !important; }
+        .mode-view .lf-edge-adjust, .mode-view .lf-node-adjust { display: none !important; }
+        .mode-view .lf-anchor { display: none !important; }
+
+        /* 右键菜单 */
         #context-menu { display: none; position: absolute; z-index: 9999; background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 0; min-width: 120px; }
         #context-menu .menu-item { padding: 8px 15px; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; }
         #context-menu .menu-item:hover { background: #f2f2f2; color: #1e9fff; }
         #context-menu .menu-item i { margin-right: 8px; font-size: 16px; }
     </style>
 </head>
-<body>
+<body class="mode-view">
 
-<!-- 顶部工具栏 -->
-<div class="toolbar-area" style="height: 50px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 16px; line-height: 50px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center;">
-    <div class="layui-btn-group">
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-undo" title="撤销 (Ctrl+Z)"><i class="layui-icon layui-icon-left"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-redo" title="重做 (Ctrl+Y)"><i class="layui-icon layui-icon-right"></i></button>
-    </div>
-    <span class="toolbar-divider"></span>
-    <div class="layui-btn-group">
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-in" title="放大"><i class="layui-icon layui-icon-addition"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fit" title="适应画布"><i class="layui-icon layui-icon-senior"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-reset" title="重置缩放"><i class="layui-icon layui-icon-refresh"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fullscreen" title="全屏模式"><i class="layui-icon layui-icon-screen-full"></i></button>
-    </div>
-    <span class="toolbar-divider"></span>
-    <div class="layui-btn-group">
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-snapshot"><i class="layui-icon layui-icon-picture"></i> 导出图片</button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
-    </div>
-    <span class="toolbar-divider"></span>
-    <select id="edge-type-select" class="toolbar-select">
-        <option value="custom-bezier" selected>〰️ 曲线</option>
-        <option value="custom-polyline">📐 折线</option>
-        <option value="custom-line">📏 直线</option>
+<!-- 顶部栏 -->
+<div class="top-bar">
+    <div class="top-bar-logo"><i class="layui-icon layui-icon-template-1"></i></div>
+    <div class="top-bar-title">功能导航</div>
+    <select id="group-select" class="top-bar-select">
+        <!-- 动态加载 -->
     </select>
-    <div class="layui-btn-group" style="margin-left: auto;">
-        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-export"><i class="layui-icon layui-icon-export"></i> 导出 JSON</button>
-        <button class="layui-btn layui-btn-sm" id="btn-save"><i class="layui-icon layui-icon-ok"></i> 保存发布</button>
+    <div class="top-bar-actions">
+        <button class="btn-action btn-primary" id="btn-default-config">默认设置</button>
+        <button class="btn-action" id="btn-config">设置</button>
+        <button class="btn-action edit-only" id="btn-cancel">取消</button>
     </div>
-    <span class="toolbar-divider"></span>
-    <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-go-designer" title="审批流程设计"><i class="layui-icon layui-icon-transfer"></i> 流程设计</button>
 </div>
 
-<!-- 主体三栏布局 -->
+<!-- 主体布局 -->
 <div class="main-container">
-    <!-- 左侧：分组导航 + 基础图形 -->
+    <!-- 左侧面板 -->
     <div class="left-panel" id="left-panel">
-        <!-- 分组导航区 -->
-        <div class="nav-group-section">
-            <div class="panel-title">导航分组</div>
-            <div class="nav-group-list" id="nav-group-list">
-                <!-- 动态加载分组列表 -->
-            </div>
-            <div class="nav-group-footer">
-                <button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-set-group" style="border-radius: 6px;">
-                    <i class="layui-icon layui-icon-set"></i> 设置分组
-                </button>
-            </div>
+        <!-- 分组树（查看模式） -->
+        <div class="nav-tree-section view-only">
+            <div class="nav-tree-title"><i class="layui-icon layui-icon-triangle-r"></i> 导航分组</div>
+            <div class="nav-tree-list" id="nav-tree-list"></div>
         </div>
-
-        <!-- 基础图形区 -->
-        <div class="shapes-section">
-            <div class="panel-title">基础图形</div>
+        <!-- 基础图形（设计模式） -->
+        <div class="shapes-section" style="display:none;">
+            <div class="shapes-title">基础图形</div>
             <div class="base-shapes-grid">
                 <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div></div>
                 <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div></div>
@@ -213,21 +182,46 @@
                 <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div></div>
             </div>
         </div>
-        <button id="toggle-left" class="toggle-btn left-toggle" title="收起/展开左侧面板"><i class="layui-icon layui-icon-left"></i></button>
+        <!-- 底部设置分组按钮 -->
+        <div class="nav-tree-footer view-only">
+            <button class="btn-set-group-bottom" id="btn-set-group-bottom">
+                <i class="layui-icon layui-icon-set"></i> 设置分组
+            </button>
+        </div>
     </div>
 
-    <!-- 中间画布 -->
+    <!-- 中间画布区域 -->
     <div class="center-panel">
-        <div id="graph" style="width: 100%; height: 100%;"></div>
+        <!-- 画布工具栏（设计模式） -->
+        <div class="canvas-toolbar" id="canvas-toolbar">
+            <button class="tb-btn" id="ctb-undo" title="撤销"><i class="layui-icon layui-icon-left"></i></button>
+            <button class="tb-btn" id="ctb-redo" title="重做"><i class="layui-icon layui-icon-right"></i></button>
+            <div class="tb-divider"></div>
+            <button class="tb-btn" id="ctb-zoom-in" title="放大"><i class="layui-icon layui-icon-addition"></i></button>
+            <button class="tb-btn" id="ctb-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
+            <button class="tb-btn" id="ctb-fit" title="适应"><i class="layui-icon layui-icon-senior"></i></button>
+            <button class="tb-btn" id="ctb-reset" title="重置"><i class="layui-icon layui-icon-refresh"></i></button>
+            <div class="tb-divider"></div>
+            <button class="tb-btn" id="ctb-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
+            <select class="tb-select" id="ctb-edge-type">
+                <option value="custom-bezier">曲线</option>
+                <option value="custom-polyline">折线</option>
+                <option value="custom-line">直线</option>
+            </select>
+            <div class="tb-divider"></div>
+            <button class="tb-btn tb-export" id="ctb-export"><i class="layui-icon layui-icon-export"></i> 导出</button>
+            <button class="tb-btn tb-save" id="ctb-save"><i class="layui-icon layui-icon-ok"></i> 保存</button>
+        </div>
+        <div id="graph" style="width:100%;height:100%;flex:1;min-height:0;"></div>
     </div>
 
-    <!-- 右侧属性面板 -->
-    <div class="right-panel" id="right-panel">
+    <!-- 右侧属性面板（设计模式） -->
+    <div class="right-panel" id="right-panel" style="background:#fff;min-height:100%;">
         <div class="panel-title">属性配置</div>
         <div id="props-content">
             <div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>
         </div>
-        <button id="toggle-right" class="toggle-btn right-toggle" title="收起/展开右侧面板"><i class="layui-icon layui-icon-right"></i></button>
+        <button id="toggle-right" class="toggle-btn right-toggle"><i class="layui-icon layui-icon-right"></i></button>
     </div>
 </div>
 
@@ -238,13 +232,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/dist/jquery-ui.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/layui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@logicflow/core@2.2.3/dist/index.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.css">
 <script src="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-<!-- LogicFlow 2.x 全局变量兼容层 -->
 <script>
   var LFConstructor = Core.default || Core.LogicFlow;
   window.LogicFlow = LFConstructor;
@@ -253,130 +247,16 @@
     if (Core[_keys[i]]) window.LogicFlow[_keys[i]] = Core[_keys[i]];
   }
   window.h = Core.h;
-  if (window.Extension) {
-    window.LogicFlow.MiniMap = Extension.MiniMap || Extension.default && Extension.default.MiniMap;
+  // 注册 Extension 插件
+  if (window.Extension && window.Extension.MiniMap) {
+    window.LogicFlow.MiniMap = window.Extension.MiniMap;
+    // 全局注册（LogicFlow 2.x 静态方法）
+    if (typeof window.LogicFlow.use === 'function') {
+      window.LogicFlow.use(window.Extension.MiniMap);
+    }
   }
 </script>
 
-<!-- 打包的业务逻辑 -->
-<script src="dist/navigator.js"></script>
-
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>功能导航</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/core/lib/style/index.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/css/layui.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-
-        .main-container { flex: 1; display: flex; min-height: 0; }
-
-        /* 左侧导航分组面板 */
-        .nav-group-panel { width: 240px; background: #fff; border-right: 1px solid #e6e6e6; padding: 16px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .nav-group-header { padding-bottom: 12px; border-bottom: 1px solid #f0f2f5; margin-bottom: 12px; }
-        .panel-title { font-size: 16px; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e9fff; font-weight: bold; }
-        .nav-group-list { flex: 1; overflow-y: auto; }
-        .nav-group-item { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #333; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-        .nav-group-item:hover { background: #f0f7ff; color: #1e9fff; }
-        .nav-group-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
-        .nav-group-item i { font-size: 16px; }
-        .nav-group-footer { padding-top: 12px; border-top: 1px solid #f0f2f5; margin-top: 12px; }
-
-        /* 中间画布 */
-        .center-panel { flex: 1; background: #f0f4f8; position: relative; min-width: 0; }
-
-        /* 工具栏 */
-        .toolbar-area .layui-btn { border-radius: 6px; font-size: 13px; transition: all 0.2s; border-color: #e0e4ea; }
-        .toolbar-area .layui-btn-primary { background: #fff; color: #5a6170; }
-        .toolbar-area .layui-btn-primary:hover { background: #f0f7ff; border-color: #1e9fff; color: #1e9fff; }
-        .toolbar-area .layui-btn i { font-size: 15px; }
-        .toolbar-area .layui-btn-sm { height: 32px; line-height: 32px; padding: 0 10px; }
-        .toolbar-area .layui-btn-sm + .layui-btn-sm { margin-left: 2px; }
-        .toolbar-area .layui-btn-normal { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
-        .toolbar-area .layui-btn-normal:hover { background: #1890ff; color: #fff; }
-        .toolbar-divider { display: inline-block; width: 1px; height: 20px; background: linear-gradient(to bottom, transparent, #dce1e8, transparent); margin: 0 8px; vertical-align: middle; }
-
-        /* 全屏模式 */
-        .fullscreen-mode .nav-group-panel { display: none; }
-        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 50px; width: 100%; height: calc(100vh - 50px); z-index: 100; }
-
-        /* 隐藏 LogicFlow 的网格、选中框、调整手柄 */
-        .lf-grid { display: none !important; }
-        .lf-node-selected-outline { display: none !important; }
-        .lf-edge-adjust, .lf-node-adjust { display: none !important; }
-        .lf-anchor { display: none !important; }
-    </style>
-</head>
-<body>
-
-<!-- 顶部工具栏 -->
-<div class="toolbar-area" style="height: 50px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 16px; line-height: 50px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center;">
-    <div class="layui-btn-group">
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-in" title="放大"><i class="layui-icon layui-icon-addition"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fit" title="适应画布"><i class="layui-icon layui-icon-senior"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-reset" title="重置缩放"><i class="layui-icon layui-icon-refresh"></i></button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-fullscreen" title="全屏模式"><i class="layui-icon layui-icon-screen-full"></i></button>
-    </div>
-    <span class="toolbar-divider"></span>
-    <div class="layui-btn-group">
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
-    </div>
-    <div style="margin-left: auto;">
-        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-design"><i class="layui-icon layui-icon-set"></i> 设置</button>
-    </div>
-</div>
-
-<!-- 主体两栏布局 -->
-<div class="main-container">
-    <!-- 左侧导航分组 -->
-    <div class="nav-group-panel">
-        <div class="nav-group-header">
-            <div class="panel-title" style="margin-bottom: 0;">导航分组</div>
-        </div>
-        <div class="nav-group-list" id="nav-group-list">
-            <!-- 动态加载分组列表 -->
-        </div>
-        <div class="nav-group-footer">
-            <button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-set-group" style="border-radius: 6px;">
-                <i class="layui-icon layui-icon-set"></i> 设置分组
-            </button>
-        </div>
-    </div>
-
-    <!-- 中间画布 -->
-    <div class="center-panel">
-        <div id="graph" style="width: 100%; height: 100%;"></div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/layui@2.8.18/dist/layui.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@logicflow/core@2.2.3/dist/index.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.css">
-<script src="https://cdn.jsdelivr.net/npm/@logicflow/extension@2.2.3/dist/index.min.js"></script>
-
-<!-- LogicFlow 2.x 全局变量兼容层 -->
-<script>
-  var LFConstructor = Core.default || Core.LogicFlow;
-  window.LogicFlow = LFConstructor;
-  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','LineEdge','LineEdgeModel','PolylineEdge','PolylineEdgeModel','BezierEdge','BezierEdgeModel'];
-  for (var i = 0; i < _keys.length; i++) {
-    if (Core[_keys[i]]) window.LogicFlow[_keys[i]] = Core[_keys[i]];
-  }
-  window.h = Core.h;
-  if (window.Extension) {
-    window.LogicFlow.MiniMap = Extension.MiniMap || Extension.default && Extension.default.MiniMap;
-  }
-</script>
-
-<!-- 打包的业务逻辑 -->
 <script src="dist/navigator.js"></script>
 
 </body>

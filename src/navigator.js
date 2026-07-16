@@ -1,5 +1,5 @@
 /**
- * 功能导航页 - 设计器 + 分组导航 + 基础图形
+ * 功能导航页 - 查看/设计双模式 + 分组导航 + 基础图形
  * 依赖: LogicFlow 2.2.3 (CDN全局变量) + Layui + html2canvas
  */
 layui.use(['layer', 'form', 'colorpicker'], function () {
@@ -35,7 +35,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     return style;
   }
 
-  // ========== 初始化 LogicFlow（编辑模式） ==========
+  // ========== 当前模式: view | design ==========
+  var currentMode = 'view';
+  var designGroupId = null; // 当前设计中的分组ID
+
+  // ========== 初始化 LogicFlow（可编辑配置） ==========
   var container = document.querySelector('#graph');
   var lf = new LogicFlow({
     container: container,
@@ -67,23 +71,38 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   });
 
-  // ========== 注册基础图形节点类型（无流程节点） ==========
+  // 检查并确保 MiniMap 插件可用
+  if (!lf.extension || !lf.extension.miniMap) {
+    // 尝试从 Extension 全局对象获取并手动注册
+    var MiniMapCls = (window.Extension && window.Extension.MiniMap) || LogicFlow.MiniMap;
+    if (MiniMapCls) {
+      try {
+        lf.installPlugin(MiniMapCls, {
+          width: 150, height: 120, showEdge: true, isShowCloseIcon: true,
+          rightPosition: 10, bottomPosition: 10
+        });
+        console.log('[Navigator] MiniMap manually installed');
+      } catch(e) {
+        console.warn('[Navigator] installPlugin failed:', e);
+      }
+    } else {
+      console.warn('[Navigator] MiniMap class not found');
+    }
+  }
 
-  // 基础矩形
+  // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'rect', view: RectNode, model: BaseRectModel });
 
-  // 基础圆形
   class BaseCircleModel extends CircleNodeModel {
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'circle', view: CircleNode, model: BaseCircleModel });
 
-  // 基础菱形
   class BaseDiamondModel extends DiamondNodeModel {
     initNodeData(data) { super.initNodeData(data); this.rx = (data.properties && data.properties.rx) || 50; this.ry = (data.properties && data.properties.ry) || 50; }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
@@ -91,7 +110,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'diamond', view: DiamondNode, model: BaseDiamondModel });
 
-  // 长方形
   class OblongModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 50; this.radius = 4; }
     setAttributes() { this.width = 160; this.height = 50; }
@@ -100,7 +118,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'oblong', view: RectNode, model: OblongModel });
 
-  // 直角长方形
   class SharpRectModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; this.radius = 0; }
     setAttributes() { this.width = 160; this.height = 70; this.radius = 0; }
@@ -109,7 +126,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'sharp-rect', view: RectNode, model: SharpRectModel });
 
-  // 圆角长方形
   class RoundRectModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; this.radius = 25; }
     setAttributes() { this.width = 160; this.height = 70; this.radius = 25; }
@@ -118,7 +134,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'round-rect', view: RectNode, model: RoundRectModel });
 
-  // 文档
   class DocumentModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = 140; this.height = 80; }
     setAttributes() { this.width = 140; this.height = 80; }
@@ -136,7 +151,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'document', view: DocumentView, model: DocumentModel });
 
-  // 子流程
   class SubprocessModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; }
     setAttributes() { this.width = 160; this.height = 70; }
@@ -156,7 +170,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   lf.register({ type: 'subprocess', view: SubprocessView, model: SubprocessModel });
 
-  // 内部存储
   class InternalStorageModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; }
     setAttributes() { this.width = 160; this.height = 70; }
@@ -222,7 +235,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // ========== 模块列表（远程加载） ==========
   var _moduleList = [];
-
   function getModules() {
     $.ajax({
       type: 'POST', url: '/Setting/UISolution/Ashx/CustomTopMenu.ashx', async: false,
@@ -248,7 +260,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // ========== 导航分组 ==========
   var _groupList = [];
-  var currentGroupId = null;
+  var currentGroupId = null; // 当前查看/设计的分组ID
 
   function getGroupList() {
     var list = [];
@@ -270,64 +282,261 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       },
       error: function () { list = []; }
     });
+    // 如果接口失败，尝试从 localStorage 读取缓存
+    if (!list || list.length === 0) {
+      var cached = localStorage.getItem('navigator_groups');
+      if (cached) {
+        try { list = JSON.parse(cached); } catch (e) { list = []; }
+      }
+    }
+    // 如果 localStorage 也没有，使用默认数据
+    if (!list || list.length === 0) {
+      list = [
+        { ModuleGroupId: 1481, ModuleGroupName: '内部办公' },
+        { ModuleGroupId: 1482, ModuleGroupName: '客户管理' },
+        { ModuleGroupId: 1611, ModuleGroupName: '售前管理' },
+        { ModuleGroupId: 1650, ModuleGroupName: '销售管理' },
+        { ModuleGroupId: 1612, ModuleGroupName: '服务管理' }
+      ];
+    }
     return list;
   }
 
   function loadGroupList() {
     _groupList = getGroupList();
-    var html = '';
+
+    // 渲染左侧树列表
+    var treeHtml = '';
     for (var i = 0; i < _groupList.length; i++) {
       var item = _groupList[i];
       var activeClass = (i === 0) ? ' active' : '';
-      html += '<div class="nav-group-item' + activeClass + '" data-group-id="' + item.ModuleGroupId + '">';
-      html += '<i class="layui-icon layui-icon-template-1"></i>' + item.ModuleGroupName;
-      html += '</div>';
+      treeHtml += '<div class="nav-tree-item' + activeClass + '" data-group-id="' + item.ModuleGroupId + '">';
+      treeHtml += '<i class="layui-icon layui-icon-right"></i>' + item.ModuleGroupName;
+      treeHtml += '</div>';
     }
-    document.getElementById('nav-group-list').innerHTML = html;
+    document.getElementById('nav-tree-list').innerHTML = treeHtml;
 
-    var items = document.querySelectorAll('.nav-group-item');
-    for (var j = 0; j < items.length; j++) {
-      items[j].onclick = function () {
+    // 渲染顶部下拉框
+    var selectEl = document.getElementById('group-select');
+    var selectHtml = '';
+    for (var j = 0; j < _groupList.length; j++) {
+      var item = _groupList[j];
+      var selected = (j === 0) ? ' selected' : '';
+      selectHtml += '<option value="' + item.ModuleGroupId + '"' + selected + '>' + item.ModuleGroupName + '</option>';
+    }
+    selectEl.innerHTML = selectHtml;
+
+    // 树项点击 → 更新下拉 + 加载流程图
+    var treeItems = document.querySelectorAll('.nav-tree-item');
+    for (var k = 0; k < treeItems.length; k++) {
+      treeItems[k].onclick = function () {
         var groupId = this.getAttribute('data-group-id');
         currentGroupId = groupId;
-        for (var k = 0; k < items.length; k++) { items[k].classList.remove('active'); }
+        for (var m = 0; m < treeItems.length; m++) { treeItems[m].classList.remove('active'); }
         this.classList.add('active');
-        // TODO: 根据 groupId 加载对应的流程图数据
-        layer.msg('切换到分组：' + this.innerText.trim(), { icon: 0, time: 1500 });
+        selectEl.value = groupId;
+        // 编辑模式下保持编辑模式，查看模式下保持查看模式
+        if (currentMode === 'design') {
+          designGroupId = groupId;
+          loadGroupFlow(groupId);
+        } else {
+          switchMode('view');
+          loadGroupFlow(groupId);
+        }
       };
+    }
+
+    // 下拉框切换 → 更新树选中 + 加载流程图
+    selectEl.onchange = function () {
+      var groupId = this.value;
+      currentGroupId = groupId;
+      for (var n = 0; n < treeItems.length; n++) {
+        treeItems[n].classList.toggle('active', treeItems[n].getAttribute('data-group-id') === groupId);
+      }
+      // 编辑模式下保持编辑模式，查看模式下保持查看模式
+      if (currentMode === 'design') {
+        designGroupId = groupId;
+        loadGroupFlow(groupId);
+      } else {
+        switchMode('view');
+        loadGroupFlow(groupId);
+      }
+    };
+
+    // 默认加载第一个分组
+    if (_groupList.length > 0) {
+      currentGroupId = _groupList[0].ModuleGroupId;
+      switchMode('view'); // 初始化为查看模式，禁用编辑操作
+      loadGroupFlow(currentGroupId);
     }
   }
 
+  // ========== 加载分组流程图数据 ==========
+  function loadGroupFlow(groupId) {
+    // TODO: 后续替换为真实接口调用
+    // 当前使用 localStorage 模拟
+    var storageKey = 'navigator_flow_' + groupId;
+    var cachedData = localStorage.getItem(storageKey);
+    
+    if (cachedData) {
+      try {
+        var data = JSON.parse(cachedData);
+        lf.render(data);
+      } catch (e) {
+        lf.render({ nodes: [], edges: [] });
+      }
+    } else {
+      // 尝试从接口加载
+      $.ajax({
+        type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
+        data: { act: 'Get_Navigator_DiagramData', moduleGroupId: groupId },
+        async: false,
+        success: function (retData) {
+          if (retData && retData !== '') {
+            try {
+              var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+              lf.render(data);
+              // 缓存到 localStorage
+              localStorage.setItem(storageKey, JSON.stringify(data));
+            } catch (e) {
+              lf.render({ nodes: [], edges: [] });
+            }
+          } else {
+            lf.render({ nodes: [], edges: [] });
+          }
+          setTimeout(function() { lf.resize(); }, 100);
+        },
+        error: function () {
+          lf.render({ nodes: [], edges: [] });
+        }
+      });
+    }
+    setTimeout(function() { lf.resize(); }, 100);
+    clearPanel();
+  }
+
+  // ========== 模式切换 ==========
+  function switchMode(mode) {
+    currentMode = mode;
+    var body = document.body;
+    body.classList.remove('mode-view', 'mode-design');
+    body.classList.add('mode-' + mode);
+
+    var shapesSection = document.querySelector('.shapes-section');
+    var rightPanel = document.getElementById('right-panel');
+    var canvasToolbar = document.getElementById('canvas-toolbar');
+    var viewOnlyEls = document.querySelectorAll('.view-only');
+
+    if (mode === 'view') {
+      // 查看模式: 显示分组, 隐藏图形/属性/工具栏
+      designGroupId = null;
+      if (shapesSection) shapesSection.style.display = 'none';
+      if (rightPanel) rightPanel.style.display = 'none';
+      if (canvasToolbar) canvasToolbar.style.display = 'none';
+      for (var j = 0; j < viewOnlyEls.length; j++) viewOnlyEls[j].style.display = '';
+      // 禁用所有编辑操作（静默模式）
+      lf.updateEditConfig({
+        isSilentMode: true,
+        adjustNodePosition: false,
+        allowRotate: false,
+        allowResize: false,
+        adjustEdge: false,
+        adjustEdgeStartAndEnd: false,
+        nodeTextEdit: false,
+        edgeTextEdit: false,
+        nodeTextDraggable: false,
+        edgeTextDraggable: false,
+        hideAnchors: true,
+      });
+    } else {
+      // 设计模式: 显示图形/属性/工具栏, 隐藏分组
+      if (shapesSection) shapesSection.style.display = 'block';
+      if (rightPanel) rightPanel.style.display = 'block';
+      if (canvasToolbar) canvasToolbar.style.display = 'flex';
+      for (var j = 0; j < viewOnlyEls.length; j++) viewOnlyEls[j].style.display = 'none';
+      // 恢复所有编辑操作
+      lf.updateEditConfig({
+        isSilentMode: false,
+        adjustNodePosition: true,
+        allowRotate: true,
+        allowResize: true,
+        adjustEdge: true,
+        adjustEdgeStartAndEnd: true,
+        nodeTextEdit: true,
+        edgeTextEdit: true,
+        nodeTextDraggable: true,
+        edgeTextDraggable: true,
+        hideAnchors: false,
+      });
+    }
+    setTimeout(function() { lf.resize(); }, 100);
+  }
+
+  // ========== 设置分组弹窗 ==========
+  // 分组项 HTML 模板
+  function buildGroupItemHtml(groupId, groupName) {
+    return '<div class="nav-group-item" data-id="' + groupId + '">' +
+      '<span class="nav-group-drag" title="拖动排序"><i class="layui-icon layui-icon-spread-left"></i></span>' +
+      '<input type="text" class="nav-group-input layui-input" ModuleGroupId="' + groupId + '" value="' + groupName + '" placeholder="请输入分组名">' +
+      '<span class="nav-group-delete" title="删除分组"><i class="layui-icon layui-icon-delete"></i></span>' +
+      '</div>';
+  }
+
+  // 弹窗内样式
+  var groupStyle = '<style>' +
+    '.navigatorGroup { padding: 0 16px 10px; }' +
+    '.navigatorSearch { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }' +
+    '.navigatorSearch input[type="text"] { flex: 1; }' +
+    '.navigatorBody { max-height: 340px; overflow-y: auto; padding: 0 2px; }' +
+    '.nav-group-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 6px; border: 1px solid #e0e4ea; border-radius: 6px; background: #fafbfc; transition: all 0.2s; }' +
+    '.nav-group-item:hover { border-color: #1e9fff; background: #f0f7ff; }' +
+    '.nav-group-item.ui-sortable-helper { box-shadow: 0 2px 8px rgba(0,0,0,0.15); border-color: #1e9fff; background: #fff; }' +
+    '.nav-group-item.ui-sortable-placeholder { visibility: visible !important; background: #e6f7ff; border: 2px dashed #91d5ff; height: 40px; margin-bottom: 6px; }' +
+    '.nav-group-drag { cursor: grab; color: #bbb; font-size: 16px; display: flex; align-items: center; flex-shrink: 0; user-select: none; }' +
+    '.nav-group-drag:hover { color: #1e9fff; }' +
+    '.nav-group-drag:active { cursor: grabbing; }' +
+    '.nav-group-input { flex: 1; border: none !important; background: transparent !important; font-size: 13px; padding: 4px 6px !important; min-width: 0; }' +
+    '.nav-group-input:focus { outline: none; background: #fff !important; border: 1px solid #1e9fff !important; border-radius: 4px; }' +
+    '.nav-group-delete { cursor: pointer; color: #ccc; font-size: 18px; display: flex; align-items: center; flex-shrink: 0; transition: color 0.2s; }' +
+    '.nav-group-delete:hover { color: #ff4d4f; }' +
+    '</style>';
+
   function setGroup() {
-    var html = '';
-    html += "<div class='navigatorGroup' style='margin: 10px 20px;'>";
-    html += "<div class='navigatorSearch' style='margin: 0 20px; padding-bottom: 10px;'>";
-    html += '新名称：<input type="text" id="navigatorInput" class="layui-input" maxlength="120" autocomplete="off" placeholder="请输入分组名" style="width:159px;padding-left:3px;display:inline-block;vertical-align:middle;" >';
-    html += '<input type="button" id="navigatorAdd" class="layui-btn layui-btn-sm" value="添加" style="margin-left:6px;box-sizing:border-box;width:60px;">';
+    var html = groupStyle;
+    html += "<div class='navigatorGroup'>";
+    html += "<div class='navigatorSearch'>";
+    html += '<input type="text" id="navigatorInput" class="layui-input" maxlength="120" autocomplete="off" placeholder="请输入新分组名称">';
+    html += '<input type="button" id="navigatorAdd" class="layui-btn layui-btn-sm layui-btn-normal" value="添加">';
     html += '</div>';
-    html += "<div class='navigatorBody' style='height: 316px;overflow: auto;padding: 0px 10px;'>";
+    html += "<div class='navigatorBody'>";
     for (var i = 0; i < _groupList.length; i++) {
-      html += '<div class="nameItem" style="margin-bottom: 10px;border: 1px solid #ccc;background: url(/images/picklistdrag.gif) no-repeat 5px;">';
-      html += '<input type="text" ModuleGroupId="' + _groupList[i].ModuleGroupId + '" value="' + _groupList[i].ModuleGroupName + '" class="layui-input" placeholder="请输入分组名" style="margin-left:10px;width: 85%;border: none;padding-left:3px;" >';
-      html += '<img alt="" style="border: 0px; cursor: pointer;position: relative;top: 2px;left: 13px;" title="删除" src="/images/picklistdeleteIcon.gif">';
-      html += '</div>';
+      html += buildGroupItemHtml(_groupList[i].ModuleGroupId, _groupList[i].ModuleGroupName);
     }
     html += '</div></div>';
 
     layer.open({
-      type: 1, title: '设置分组', content: html, area: ['380px', '440px'], btn: ['保存', '取消'],
+      type: 1, title: '设置分组', content: html, area: ['400px', '480px'], btn: ['保存', '取消'],
       yes: function (index) {
         var saveData = [];
         var $navigatorGroup = $('.navigatorGroup');
-        $navigatorGroup.find('.navigatorBody .nameItem .layui-input').each(function () {
-          saveData.push({ ModuleGroupId: $(this).attr('ModuleGroupId'), ModuleGroupName: $(this).val() });
+        $navigatorGroup.find('.navigatorBody .nav-group-item').each(function () {
+          var $input = $(this).find('.nav-group-input');
+          var name = $input.val().trim();
+          if (name) saveData.push({ ModuleGroupId: $input.attr('ModuleGroupId'), ModuleGroupName: name });
         });
         if (saveData.length === 0) { layer.msg('至少保留一个分组', { icon: 2 }); return; }
+        // TODO: 后续替换为真实接口调用，当前使用 localStorage 模拟
+        localStorage.setItem('navigator_groups', JSON.stringify(saveData));
         $.ajax({
           type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
           data: { act: 'Save_NavigatorGroup', saveData: JSON.stringify(saveData) },
           success: function () { layer.msg('操作成功', { icon: 1 }); layer.close(index); loadGroupList(); },
-          error: function () { layer.msg('保存失败', { icon: 2 }); }
+          error: function () {
+            // 接口失败时使用 localStorage 缓存
+            layer.msg('已保存到本地缓存', { icon: 1 });
+            layer.close(index);
+            loadGroupList();
+          }
         });
       },
       success: function (layero) {
@@ -335,27 +544,57 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         var $navigatorInput = $navigatorGroup.find('#navigatorInput');
         var $navigatorAdd = $navigatorGroup.find('#navigatorAdd');
         var $navigatorBody = $navigatorGroup.find('.navigatorBody');
+
+        // 添加新分组
         $navigatorAdd.on('click', function () {
+          var val = $navigatorInput.val().trim();
+          if (!val) { layer.msg('请输入分组名称', { icon: 0 }); return; }
           var idList = [];
-          $navigatorGroup.find('.navigatorBody .nameItem .layui-input').each(function () {
+          $navigatorGroup.find('.nav-group-input').each(function () {
             var oId = parseInt($(this).attr('ModuleGroupId'));
             if (!isNaN(oId) && oId !== 0) idList.push(oId);
           });
           idList.sort(function (a, b) { return a - b; });
           var nId = idList.pop();
           if (nId === undefined) nId = 1; else nId = nId + 1;
-          $navigatorBody.append('<div class="nameItem" style="margin-bottom: 10px;border: 1px solid #ccc;background: url(/images/picklistdrag.gif) no-repeat 5px;">' +
-            '<input type="text" ModuleGroupId="' + nId + '" value="' + $navigatorInput.val() + '" class="layui-input" placeholder="请输入分组名" style="margin-left:10px;width: 85%;border: none;padding-left:3px;" >' +
-            '<img alt="" style="border: 0px; cursor: pointer;position: relative;top: 2px;left: 13px;" title="删除" src="/images/picklistdeleteIcon.gif"></div>');
+          $navigatorBody.append(buildGroupItemHtml(nId, val));
+          $navigatorInput.val('');
+          // 滚动到底部
+          $navigatorBody.scrollTop($navigatorBody[0].scrollHeight);
         });
-        $navigatorBody.on('click', '.nameItem img', function () { $(this).parent().remove(); });
+
+        // 回车添加
+        $navigatorInput.on('keydown', function (e) {
+          if (e.keyCode === 13) $navigatorAdd.click();
+        });
+
+        // 删除分组（带确认弹窗）
+        $navigatorBody.on('click', '.nav-group-delete', function () {
+          var $item = $(this).closest('.nav-group-item');
+          var name = $item.find('.nav-group-input').val() || '该分组';
+          layer.confirm('删除将同时删除当前组导数据，确定删除该分组【' + name + '】吗？', { icon: 3, title: '删除确认' }, function (index) {
+            layer.close(index);
+            $item.slideUp(200, function () { $item.remove(); });
+          });
+        });
+
+        // 拖拽排序
+        $navigatorBody.sortable({
+          items: '> .nav-group-item',
+          handle: '.nav-group-drag',
+          opacity: 0.9,
+          distance: 3,
+          cursor: 'grabbing',
+          tolerance: 10,
+          placeholder: 'ui-sortable-placeholder',
+          start: function (event, ui) {
+            ui.placeholder.height(ui.item.outerHeight() - 7);
+          },
+          stop: function () {}
+        });
       }
     });
   }
-
-  // 初始化加载分组列表
-  loadGroupList();
-  document.getElementById('btn-set-group').onclick = function () { setGroup(); };
 
   // ========== 拖拽添加节点 ==========
   document.querySelectorAll('.node-item').forEach(function (item) {
@@ -409,6 +648,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   };
 
   function renderNodePanel(data) {
+    if (currentMode !== 'design') return; // 查看模式不显示属性面板
     currentElementId = data.id;
     currentElementType = 'node';
     var props = data.properties || {};
@@ -446,6 +686,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
   function renderEdgePanel(data) {
+    if (currentMode !== 'design') return;
     currentElementId = data.id;
     currentElementType = 'edge';
     var props = data.properties || {};
@@ -489,6 +730,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
   function renderBlankPanel() {
+    if (currentMode !== 'design') return;
     currentElementId = null; currentElementType = null;
     document.getElementById('props-content').innerHTML =
       '<div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>' +
@@ -509,9 +751,20 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
   // ========== 事件监听 ==========
-  lf.on('node:click', function (arg) { renderNodePanel(arg.data); });
-  lf.on('edge:click', function (arg) { renderEdgePanel(arg.data); });
-  lf.on('blank:click', function () { renderBlankPanel(); });
+  lf.on('node:click', function (arg) {
+    if (currentMode === 'design') {
+      renderNodePanel(arg.data);
+    } else {
+      // 查看模式：弹出节点信息
+      var text = (arg.data.text && arg.data.text.value) || '未命名节点';
+      var props = arg.data.properties || {};
+      var info = '节点：' + text;
+      if (props.owner) info += ' | 负责人：' + props.owner;
+      layer.msg(info, { icon: 0, time: 3000 });
+    }
+  });
+  lf.on('edge:click', function (arg) { if (currentMode === 'design') renderEdgePanel(arg.data); });
+  lf.on('blank:click', function () { if (currentMode === 'design') renderBlankPanel(); });
   lf.on('node:delete', clearPanel);
   lf.on('edge:delete', clearPanel);
 
@@ -553,48 +806,122 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     return false;
   });
 
-  // 网格开关
-  form.on('switch(gridSwitch)', function (d) {
-    lf.setTheme({
-      grid: d.elem.checked
-        ? { size: 10, visible: true, type: 'dot', config: { color: '#e0e0e0', thickness: 1 } }
-        : { visible: false }
-    });
-  });
+  // ========== 顶部按钮 ==========
+  // 默认设置（占位）
+  var btnDefaultConfig = document.getElementById('btn-default-config');
+  if (btnDefaultConfig) btnDefaultConfig.onclick = function () { layer.msg('默认设置功能待实现', { icon: 0 }); };
 
-  // ========== 工具栏按钮 ==========
-  document.getElementById('btn-undo').onclick = function () { lf.undo(); };
-  document.getElementById('btn-redo').onclick = function () { lf.redo(); };
-  document.getElementById('btn-zoom-in').onclick = function () { lf.zoom(true); };
-  document.getElementById('btn-zoom-out').onclick = function () { lf.zoom(false); };
-  document.getElementById('btn-fit').onclick = function () { lf.fitView(80); };
-  document.getElementById('btn-reset').onclick = function () { lf.resetZoom(); };
-  document.getElementById('btn-fullscreen').onclick = function () { document.body.classList.toggle('fullscreen-mode'); lf.resize(); };
+  // 设置 → 切换到选中分组的设计模式
+  var btnConfig = document.getElementById('btn-config');
+  if (btnConfig) btnConfig.onclick = function () {
+    if (!currentGroupId) return layer.msg('请先选择一个导航分组', { icon: 2 });
+    designGroupId = currentGroupId;
+    switchMode('design');
+    loadGroupFlow(currentGroupId);
+  };
+
+  // 取消（占位）
+  var btnCancel = document.getElementById('btn-cancel');
+  if (btnCancel) btnCancel.onclick = function () {
+    switchMode('view');
+    // 重新加载当前分组的流程图
+    if (currentGroupId) loadGroupFlow(currentGroupId);
+  };
+
+  // 设置分组按钮（左侧底部）
+  var btnSetGroupBottom = document.getElementById('btn-set-group-bottom');
+  if (btnSetGroupBottom) btnSetGroupBottom.onclick = function () { setGroup(); };
+
+  // ========== 画布工具栏按钮 ==========
+  var ctbUndo = document.getElementById('ctb-undo');
+  var ctbRedo = document.getElementById('ctb-redo');
+  if (ctbUndo) ctbUndo.onclick = function () { lf.undo(); };
+  if (ctbRedo) ctbRedo.onclick = function () { lf.redo(); };
+  var ctbZoomIn = document.getElementById('ctb-zoom-in');
+  var ctbZoomOut = document.getElementById('ctb-zoom-out');
+  var ctbFit = document.getElementById('ctb-fit');
+  var ctbReset = document.getElementById('ctb-reset');
+  if (ctbZoomIn) ctbZoomIn.onclick = function () { lf.zoom(true); };
+  if (ctbZoomOut) ctbZoomOut.onclick = function () { lf.zoom(false); };
+  if (ctbFit) ctbFit.onclick = function () { lf.fitView(80); };
+  if (ctbReset) ctbReset.onclick = function () { lf.resetZoom(); };
+
+  // 小地图
+  var miniMapVisible = false;
+  var ctbMinimap = document.getElementById('ctb-minimap');
+  if (ctbMinimap) ctbMinimap.onclick = function () {
+    if (!lf.extension || !lf.extension.miniMap) {
+      return layer.msg('小地图插件未加载', { icon: 2 });
+    }
+    if (miniMapVisible) {
+      lf.extension.miniMap.hide(); miniMapVisible = false;
+      this.style.background = '';
+    } else {
+      lf.extension.miniMap.show(); miniMapVisible = true;
+      this.style.background = '#f0f7ff';
+    }
+  };
 
   // 边类型切换
-  document.getElementById('edge-type-select').onchange = function () { lf.setDefaultEdgeType(this.value); };
+  var ctbEdgeType = document.getElementById('ctb-edge-type');
+  if (ctbEdgeType) ctbEdgeType.onchange = function () { lf.setDefaultEdgeType(this.value); };
+
+  // 导出 JSON
+  var ctbExport = document.getElementById('ctb-export');
+  if (ctbExport) ctbExport.onclick = function () {
+    var data = lf.getGraphData();
+    layer.open({
+      type: 1, title: '导出 JSON 数据', area: ['650px', '450px'],
+      content: '<pre style="padding:15px; height:380px; overflow:auto; background:#f8f8f8; font-size:12px;">' + JSON.stringify(data, null, 2) + '</pre>'
+    });
+  };
+
+  // 保存
+  var ctbSave = document.getElementById('ctb-save');
+  if (ctbSave) ctbSave.onclick = function () {
+    var data = lf.getGraphData();
+    if (!data.nodes || data.nodes.length === 0) return layer.msg('画布为空，无法保存！', { icon: 2 });
+    var unassignedNodes = [];
+    for (var i = 0; i < data.nodes.length; i++) {
+      var node = data.nodes[i], props = node.properties || {};
+      if (!props.module || props.module === '') unassignedNodes.push((node.text && node.text.value) || node.id);
+    }
+    //if (unassignedNodes.length > 0) return layer.msg('以下节点未分配模块：' + unassignedNodes.join('、'), { icon: 2, time: 5000 });
+    if (!currentGroupId) return layer.msg('请先选择一个导航分组！', { icon: 2 });
+    layer.confirm('确定要保存当前导航图吗？', { icon: 3, title: '保存确认' }, function (index) {
+      layer.close(index);
+      var jsonStr = JSON.stringify(data);
+      var storageKey = 'navigator_flow_' + currentGroupId;
+      localStorage.setItem(storageKey, jsonStr);
+      $.ajax({
+        type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
+        data: { act: 'Save_Navigator_DiagramData', moduleGroupId: currentGroupId, data: jsonStr },
+        success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
+        error: function () { layer.msg('已保存到本地缓存', { icon: 1, time: 2000 }); }
+      });
+    });
+  };
 
   // 左右面板折叠
-  var leftPanel = document.getElementById('left-panel');
   var rightPanel = document.getElementById('right-panel');
-  var toggleLeftBtn = document.getElementById('toggle-left');
   var toggleRightBtn = document.getElementById('toggle-right');
 
-  toggleLeftBtn.onclick = function () {
-    leftPanel.classList.toggle('collapsed');
-    var isCollapsed = leftPanel.classList.contains('collapsed');
-    toggleLeftBtn.innerHTML = isCollapsed ? '<i class="layui-icon layui-icon-right"></i>' : '<i class="layui-icon layui-icon-left"></i>';
-    setTimeout(function () { lf.resize(); }, 300);
-  };
-  toggleRightBtn.onclick = function () {
-    rightPanel.classList.toggle('collapsed');
-    var isCollapsed = rightPanel.classList.contains('collapsed');
-    toggleRightBtn.innerHTML = isCollapsed ? '<i class="layui-icon layui-icon-left"></i>' : '<i class="layui-icon layui-icon-right"></i>';
-    setTimeout(function () { lf.resize(); }, 300);
-  };
+  if (toggleRightBtn) {
+    toggleRightBtn.onclick = function () {
+      rightPanel.classList.toggle('collapsed');
+      var isCollapsed = rightPanel.classList.contains('collapsed');
+      toggleRightBtn.innerHTML = isCollapsed ? '<i class="layui-icon layui-icon-left"></i>' : '<i class="layui-icon layui-icon-right"></i>';
+      setTimeout(function () { lf.resize(); }, 300);
+    };
+  }
 
-  // 导出图片
-  document.getElementById('btn-snapshot').onclick = function () {
+  // 全屏（如存在）
+  var btnFullscreen = document.getElementById('btn-fullscreen');
+  if (btnFullscreen) btnFullscreen.onclick = function () { document.body.classList.toggle('fullscreen-mode'); lf.resize(); };
+
+  // 导出图片（如存在）
+  var btnSnapshot = document.getElementById('btn-snapshot');
+  if (btnSnapshot) btnSnapshot.onclick = function () {
     layer.msg('正在生成图片...', { icon: 16, shade: 0.1, time: 0 });
     html2canvas(document.querySelector('#graph'), { backgroundColor: '#fafafa' }).then(function (canvas) {
       var link = document.createElement('a');
@@ -603,60 +930,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
   };
 
-  // 小地图开关
-  var miniMapVisible = false;
-  document.getElementById('btn-minimap').onclick = function () {
-    if (!lf.extension || !lf.extension.miniMap) return layer.msg('小地图插件未加载', { icon: 2 });
-    if (miniMapVisible) {
-      lf.extension.miniMap.hide(); miniMapVisible = false;
-      this.classList.remove('layui-btn-warm'); this.classList.add('layui-btn-primary');
-    } else {
-      lf.extension.miniMap.show(); miniMapVisible = true;
-      this.classList.remove('layui-btn-primary'); this.classList.add('layui-btn-warm');
-    }
-  };
-
-  // 导出 JSON
-  document.getElementById('btn-export').onclick = function () {
-    var data = lf.getGraphData();
-    layer.open({
-      type: 1, title: '导出 JSON 数据', area: ['650px', '450px'],
-      content: '<pre style="padding:15px; height:380px; overflow:auto; background:#f8f8f8; font-size:12px;">' + JSON.stringify(data, null, 2) + '</pre>'
-    });
-  };
-
-  // 保存发布
-  document.getElementById('btn-save').onclick = function () {
-    var data = lf.getGraphData();
-    if (!data.nodes || data.nodes.length === 0) return layer.msg('画布为空，无法保存！', { icon: 2 });
-
-    // 校验所有节点是否已分配模块
-    var unassignedNodes = [];
-    for (var i = 0; i < data.nodes.length; i++) {
-      var node = data.nodes[i], props = node.properties || {};
-      if (!props.module || props.module === '') unassignedNodes.push((node.text && node.text.value) || node.id);
-    }
-    if (unassignedNodes.length > 0) return layer.msg('以下节点未分配模块：' + unassignedNodes.join('、'), { icon: 2, time: 5000 });
-
-    // 校验是否已选择导航分组
-    if (!currentGroupId) return layer.msg('请先在左侧选择一个导航分组！', { icon: 2 });
-
-    layer.confirm('确定要保存当前导航图吗？', { icon: 3, title: '保存确认' }, function (index) {
-      layer.close(index);
-      var jsonStr = JSON.stringify(data);
-      $.ajax({
-        type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-        data: { act: 'Save_Navigator_DiagramData', moduleGroupId: currentGroupId, data: jsonStr },
-        success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
-        error: function () { layer.msg('保存失败，请重试！', { icon: 2 }); }
-      });
-    });
-  };
-
-  // 跳转到审批设计页
-  document.getElementById('btn-go-designer').onclick = function () {
-    window.location.href = 'designer.html';
-  };
+  // 设置分组按钮（左侧底部）已在上文绑定
 
   // 窗口自适应
   window.addEventListener('resize', function () { lf.resize(); });
@@ -665,448 +939,26 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var menu = document.getElementById('context-menu');
   graphEl.addEventListener('contextmenu', function (e) {
     e.preventDefault();
-    if (currentElementId) {
+    if (currentMode === 'design' && currentElementId) {
       menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
     } else { menu.style.display = 'none'; }
   });
   document.addEventListener('click', function () { menu.style.display = 'none'; });
 
-  document.getElementById('menu-edit').onclick = function () {
+  var menuEdit = document.getElementById('menu-edit');
+  var menuDelete = document.getElementById('menu-delete');
+  if (menuEdit) menuEdit.onclick = function () {
     if (currentElementType === 'node') { var d = lf.getNodeDataById(currentElementId); if (d) renderNodePanel(d); }
     else if (currentElementType === 'edge') { var d = lf.getEdgeDataById(currentElementId); if (d) renderEdgePanel(d); }
     menu.style.display = 'none';
   };
-
-  document.getElementById('menu-delete').onclick = function () {
+  if (menuDelete) menuDelete.onclick = function () {
     if (currentElementType === 'node') lf.deleteNode(currentElementId);
     else if (currentElementType === 'edge') lf.deleteEdge(currentElementId);
     clearPanel(); menu.style.display = 'none';
   };
-});
-/**
- * 功能导航页 - 只读画布 + 分组导航
- * 依赖: LogicFlow 2.2.3 (CDN全局变量) + Layui
- */
-layui.use(['layer'], function () {
-  var layer = layui.layer;
 
-  // 从全局 LogicFlow 对象获取节点/边基类
-  var CircleNode = LogicFlow.CircleNode;
-  var CircleNodeModel = LogicFlow.CircleNodeModel;
-  var RectNode = LogicFlow.RectNode;
-  var RectNodeModel = LogicFlow.RectNodeModel;
-  var DiamondNode = LogicFlow.DiamondNode;
-  var DiamondNodeModel = LogicFlow.DiamondNodeModel;
-
-  // ========== 自定义节点样式工具函数（只读渲染需要） ==========
-  function applyNodeStyle(model, style, defaultFill, defaultStroke) {
-    var props = model.properties || {};
-    style.fill = props.fill || defaultFill;
-    style.stroke = props.stroke || defaultStroke;
-    style.strokeWidth = props.strokeWidth ? parseInt(props.strokeWidth) : 2;
-    return style;
-  }
-  function applyNodeTextStyle(model, style) {
-    var props = model.properties || {};
-    if (props.textColor) style.color = props.textColor;
-    return style;
-  }
-
-  // ========== 初始化 LogicFlow（只读配置） ==========
-  var container = document.querySelector('#graph');
-  var lf = new LogicFlow({
-    container: container,
-    width: container.clientWidth || 800,
-    height: container.clientHeight || 600,
-    grid: { visible: false },
-    keyboard: { enabled: false },
-    edgeType: 'custom-bezier',
-    stopScrollGraph: true,
-    stopZoomGraph: false,
-    stopMoveGraph: true,
-    adjustEdge: false,
-    adjustEdgeMiddle: false,
-    adjustEdgeStartAndEnd: false,
-    allowRotate: false,
-    allowResize: false,
-    nodeTextEdit: false,
-    edgeTextEdit: false,
-    nodeTextDraggable: false,
-    edgeTextDraggable: false,
-    hideAnchors: true,
-    nodeSelectedOutline: false,
-    edgeSelectedOutline: false,
-    snapline: false,
-    hoverOutline: false,
-    plugins: LogicFlow.MiniMap ? [LogicFlow.MiniMap] : [],
-    pluginsOptions: LogicFlow.MiniMap ? {
-      miniMap: {
-        width: 150,
-        height: 120,
-        showEdge: true,
-        isShowCloseIcon: true,
-        rightPosition: 10,
-        bottomPosition: 10
-      }
-    } : {},
-  });
-
-  // ========== 注册自定义节点类型（只读渲染需要） ==========
-
-  // 开始节点
-  class StartNodeModel extends CircleNodeModel {
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#d9f0d3', '#52c41a'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'start-node', view: CircleNode, model: StartNodeModel });
-
-  // 结束节点
-  class EndNodeModel extends CircleNodeModel {
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffd8d8', '#f5222d'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'end-node', view: CircleNode, model: EndNodeModel });
-
-  // 审批任务节点
-  class UserTaskModel extends RectNodeModel {
-    getNodeStyle() {
-      var style = super.getNodeStyle();
-      style.radius = 8;
-      return applyNodeStyle(this, style, '#e6f7ff', '#1890ff');
-    }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'user-task', view: RectNode, model: UserTaskModel });
-
-  // 条件判断节点
-  class ConditionModel extends DiamondNodeModel {
-    initNodeData(data) {
-      super.initNodeData(data);
-      this.rx = (data.properties && data.properties.rx) || 50;
-      this.ry = (data.properties && data.properties.ry) || 50;
-    }
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#fffbe6', '#faad14'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'condition-node', view: DiamondNode, model: ConditionModel });
-
-  // 基础矩形
-  class BaseRectModel extends RectNodeModel {
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'rect', view: RectNode, model: BaseRectModel });
-
-  // 基础圆形
-  class BaseCircleModel extends CircleNodeModel {
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'circle', view: CircleNode, model: BaseCircleModel });
-
-  // 基础菱形
-  class BaseDiamondModel extends DiamondNodeModel {
-    initNodeData(data) {
-      super.initNodeData(data);
-      this.rx = (data.properties && data.properties.rx) || 50;
-      this.ry = (data.properties && data.properties.ry) || 50;
-    }
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'diamond', view: DiamondNode, model: BaseDiamondModel });
-
-  // 长方形
-  class OblongModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 50; this.radius = 4; }
-    setAttributes() { this.width = 160; this.height = 50; }
-    getNodeStyle() { var s = super.getNodeStyle(); s.radius = 4; return applyNodeStyle(this, s, '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'oblong', view: RectNode, model: OblongModel });
-
-  // 直角长方形
-  class SharpRectModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; this.radius = 0; }
-    setAttributes() { this.width = 160; this.height = 70; this.radius = 0; }
-    getNodeStyle() { var s = super.getNodeStyle(); s.radius = 0; return applyNodeStyle(this, s, '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'sharp-rect', view: RectNode, model: SharpRectModel });
-
-  // 圆角长方形
-  class RoundRectModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; this.radius = 25; }
-    setAttributes() { this.width = 160; this.height = 70; this.radius = 25; }
-    getNodeStyle() { var s = super.getNodeStyle(); s.radius = 25; return applyNodeStyle(this, s, '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  lf.register({ type: 'round-rect', view: RectNode, model: RoundRectModel });
-
-  // 文档
-  class DocumentModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = 140; this.height = 80; }
-    setAttributes() { this.width = 140; this.height = 80; }
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  class DocumentView extends RectNode {
-    getShape() {
-      const { x, y, width, height } = this.props.model;
-      const style = this.props.model.getNodeStyle();
-      const w = width, ht = height, bottomY = y + ht / 2, amp = 12;
-      const pathD = `M ${x - w/2} ${y - ht/2} L ${x + w/2} ${y - ht/2} L ${x + w/2} ${bottomY} C ${x + w/6} ${bottomY - amp}, ${x + w/6} ${bottomY - amp}, ${x} ${bottomY} C ${x - w/6} ${bottomY + amp}, ${x - w/6} ${bottomY + amp}, ${x - w/2} ${bottomY} Z`;
-      return h('g', {}, [h('path', { d: pathD, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })]);
-    }
-  }
-  lf.register({ type: 'document', view: DocumentView, model: DocumentModel });
-
-  // 子流程
-  class SubprocessModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; }
-    setAttributes() { this.width = 160; this.height = 70; }
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  class SubprocessView extends RectNode {
-    getShape() {
-      const { x, y, width, height } = this.props.model;
-      const style = this.props.model.getNodeStyle();
-      return h('g', {}, [
-        h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2+30, y1: y-height/2, x2: x-width/2+30, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x+width/2-30, y1: y-height/2, x2: x+width/2-30, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
-      ]);
-    }
-  }
-  lf.register({ type: 'subprocess', view: SubprocessView, model: SubprocessModel });
-
-  // 内部存储
-  class InternalStorageModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = 160; this.height = 70; }
-    setAttributes() { this.width = 160; this.height = 70; }
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
-    getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
-  }
-  class InternalStorageView extends RectNode {
-    getShape() {
-      const { x, y, width, height } = this.props.model;
-      const style = this.props.model.getNodeStyle();
-      return h('g', {}, [
-        h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2, y1: y-height/2+10, x2: x+width/2, y2: y-height/2+10, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2+20, y1: y-height/2, x2: x-width/2+20, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
-      ]);
-    }
-  }
-  lf.register({ type: 'internal-storage', view: InternalStorageView, model: InternalStorageModel });
-
-  // ========== 注册自定义边类型（只读渲染需要） ==========
-  var PolylineEdge = LogicFlow.PolylineEdge;
-  var PolylineEdgeModel = LogicFlow.PolylineEdgeModel;
-  var BezierEdge = LogicFlow.BezierEdge;
-  var BezierEdgeModel = LogicFlow.BezierEdgeModel;
-  var LineEdge = LogicFlow.LineEdge;
-  var LineEdgeModel = LogicFlow.LineEdgeModel;
-
-  function edgeStyleMixin(BaseModel) {
-    return class extends BaseModel {
-      initNodeData(data) { super.initNodeData(data); this.customTextPosition = true; }
-      getEdgeStyle() {
-        var style = super.getEdgeStyle();
-        var props = this.properties || {};
-        if (props.stroke) style.stroke = props.stroke;
-        if (props.strokeWidth) style.strokeWidth = parseInt(props.strokeWidth);
-        if (props.strokeDasharray) style.strokeDasharray = props.strokeDasharray;
-        return style;
-      }
-      getTextStyle() {
-        var style = super.getTextStyle();
-        var props = this.properties || {};
-        var edgeStyle = this.getEdgeStyle();
-        style.fontSize = 12;
-        style.color = props.textColor || edgeStyle.stroke || '#666';
-        style.background = { fill: '#fff', stroke: '#e6e6e6', radius: 2 };
-        return style;
-      }
-      getTextPosition() {
-        var props = this.properties || {};
-        var pos = props.textPosition;
-        if (!pos || pos === 'middle') return super.getTextPosition();
-        var sp = this.startPoint, ep = this.endPoint;
-        if (pos === 'start') return { x: sp.x + (ep.x - sp.x) * 0.15, y: sp.y + (ep.y - sp.y) * 0.15 };
-        if (pos === 'end') return { x: sp.x + (ep.x - sp.x) * 0.85, y: sp.y + (ep.y - sp.y) * 0.85 };
-        return super.getTextPosition();
-      }
-    };
-  }
-
-  class CustomBezierModel extends edgeStyleMixin(BezierEdgeModel) {}
-  lf.register({ type: 'custom-bezier', view: BezierEdge, model: CustomBezierModel });
-  class CustomPolylineModel extends edgeStyleMixin(PolylineEdgeModel) {}
-  lf.register({ type: 'custom-polyline', view: PolylineEdge, model: CustomPolylineModel });
-  class CustomLineModel extends edgeStyleMixin(LineEdgeModel) {}
-  lf.register({ type: 'custom-line', view: LineEdge, model: CustomLineModel });
-
-  // 渲染空画布
-  lf.render({ nodes: [], edges: [] });
-  setTimeout(function() { lf.resize(); }, 100);
-  window.lf = lf;
-
-  // ========== 导航分组 ==========
-  var _groupList = [];
-  var currentGroupId = null;
-
-  function getGroupList() {
-    var list = [];
-    $.ajax({
-      type: 'POST',
-      url: '/Common/Ashx/Common_Nav.ashx',
-      data: { act: 'Get_NavigatorGroup' },
-      async: false,
-      success: function (retData) {
-        if (!retData || retData === '') {
-          list = [
-            { ModuleGroupId: 1481, ModuleGroupName: '内部办公' },
-            { ModuleGroupId: 1482, ModuleGroupName: '客户管理' },
-            { ModuleGroupId: 1611, ModuleGroupName: '售前管理' },
-            { ModuleGroupId: 1650, ModuleGroupName: '销售管理' },
-            { ModuleGroupId: 1612, ModuleGroupName: '服务管理' }
-          ];
-        } else {
-          try { list = (typeof retData === 'string') ? JSON.parse(retData) : retData; } catch (e) { list = []; }
-        }
-      },
-      error: function () { list = []; }
-    });
-    return list;
-  }
-
-  function loadGroupList() {
-    _groupList = getGroupList();
-    var html = '';
-    for (var i = 0; i < _groupList.length; i++) {
-      var item = _groupList[i];
-      var activeClass = (i === 0) ? ' active' : '';
-      html += '<div class="nav-group-item' + activeClass + '" data-group-id="' + item.ModuleGroupId + '">';
-      html += '<i class="layui-icon layui-icon-template-1"></i>' + item.ModuleGroupName;
-      html += '</div>';
-    }
-    document.getElementById('nav-group-list').innerHTML = html;
-
-    var items = document.querySelectorAll('.nav-group-item');
-    for (var j = 0; j < items.length; j++) {
-      items[j].onclick = function () {
-        var groupId = this.getAttribute('data-group-id');
-        currentGroupId = groupId;
-        for (var k = 0; k < items.length; k++) { items[k].classList.remove('active'); }
-        this.classList.add('active');
-        // TODO: 根据 groupId 加载对应的流程图数据
-        layer.msg('切换到分组：' + this.innerText.trim(), { icon: 0, time: 1500 });
-      };
-    }
-  }
-
-  function setGroup() {
-    var html = '';
-    html += "<div class='navigatorGroup' style='margin: 10px 20px;'>";
-    html += "<div class='navigatorSearch' style='margin: 0 20px; padding-bottom: 10px;'>";
-    html += '新名称：<input type="text" id="navigatorInput" class="layui-input" maxlength="120" autocomplete="off" placeholder="请输入分组名" style="width:159px;padding-left:3px;display:inline-block;vertical-align:middle;" >';
-    html += '<input type="button" id="navigatorAdd" class="layui-btn layui-btn-sm" value="添加" style="margin-left:6px;box-sizing:border-box;width:60px;">';
-    html += '</div>';
-    html += "<div class='navigatorBody' style='height: 316px;overflow: auto;padding: 0px 10px;'>";
-    for (var i = 0; i < _groupList.length; i++) {
-      html += '<div class="nameItem" style="margin-bottom: 10px;border: 1px solid #ccc;background: url(/images/picklistdrag.gif) no-repeat 5px;">';
-      html += '<input type="text" ModuleGroupId="' + _groupList[i].ModuleGroupId + '" value="' + _groupList[i].ModuleGroupName + '" class="layui-input" placeholder="请输入分组名" style="margin-left:10px;width: 85%;border: none;padding-left:3px;" >';
-      html += '<img alt="" style="border: 0px; cursor: pointer;position: relative;top: 2px;left: 13px;" title="删除" src="/images/picklistdeleteIcon.gif">';
-      html += '</div>';
-    }
-    html += '</div></div>';
-
-    layer.open({
-      type: 1, title: '设置分组', content: html, area: ['380px', '440px'], btn: ['保存', '取消'],
-      yes: function (index) {
-        var saveData = [];
-        var $navigatorGroup = $('.navigatorGroup');
-        $navigatorGroup.find('.navigatorBody .nameItem .layui-input').each(function () {
-          saveData.push({ ModuleGroupId: $(this).attr('ModuleGroupId'), ModuleGroupName: $(this).val() });
-        });
-        if (saveData.length === 0) { layer.msg('至少保留一个分组', { icon: 2 }); return; }
-        $.ajax({
-          type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-          data: { act: 'Save_NavigatorGroup', saveData: JSON.stringify(saveData) },
-          success: function () { layer.msg('操作成功', { icon: 1 }); layer.close(index); loadGroupList(); },
-          error: function () { layer.msg('保存失败', { icon: 2 }); }
-        });
-      },
-      success: function (layero) {
-        var $navigatorGroup = $(layero).find('.navigatorGroup');
-        var $navigatorInput = $navigatorGroup.find('#navigatorInput');
-        var $navigatorAdd = $navigatorGroup.find('#navigatorAdd');
-        var $navigatorBody = $navigatorGroup.find('.navigatorBody');
-        $navigatorAdd.on('click', function () {
-          var idList = [];
-          $navigatorGroup.find('.navigatorBody .nameItem .layui-input').each(function () {
-            var oId = parseInt($(this).attr('ModuleGroupId'));
-            if (!isNaN(oId) && oId !== 0) idList.push(oId);
-          });
-          idList.sort(function (a, b) { return a - b; });
-          var nId = idList.pop();
-          if (nId === undefined) nId = 1; else nId = nId + 1;
-          $navigatorBody.append('<div class="nameItem" style="margin-bottom: 10px;border: 1px solid #ccc;background: url(/images/picklistdrag.gif) no-repeat 5px;">' +
-            '<input type="text" ModuleGroupId="' + nId + '" value="' + $navigatorInput.val() + '" class="layui-input" placeholder="请输入分组名" style="margin-left:10px;width: 85%;border: none;padding-left:3px;" >' +
-            '<img alt="" style="border: 0px; cursor: pointer;position: relative;top: 2px;left: 13px;" title="删除" src="/images/picklistdeleteIcon.gif"></div>');
-        });
-        $navigatorBody.on('click', '.nameItem img', function () { $(this).parent().remove(); });
-      }
-    });
-  }
-
-  // 初始化加载分组列表
+  // ========== 初始化 ==========
   loadGroupList();
-
-  // 绑定设置分组按钮事件
-  document.getElementById('btn-set-group').onclick = function () { setGroup(); };
-
-  // ========== 节点点击弹出信息 ==========
-  lf.on('node:click', function (arg) {
-    var text = (arg.data.text && arg.data.text.value) || '未命名节点';
-    var type = arg.data.type || 'unknown';
-    var props = arg.data.properties || {};
-    console.log('节点点击:', arg.data);
-    var info = '节点：' + text + '（类型：' + type + '）';
-    if (props.owner) info += '\n负责人：' + props.owner;
-    if (props.desc) info += '\n描述：' + props.desc;
-    layer.msg(info, { icon: 0, time: 3000 });
-  });
-
-  // ========== 工具栏按钮 ==========
-  document.getElementById('btn-zoom-in').onclick = function () { lf.zoom(true); };
-  document.getElementById('btn-zoom-out').onclick = function () { lf.zoom(false); };
-  document.getElementById('btn-fit').onclick = function () { lf.fitView(80); };
-  document.getElementById('btn-reset').onclick = function () { lf.resetZoom(); };
-  document.getElementById('btn-fullscreen').onclick = function () { document.body.classList.toggle('fullscreen-mode'); lf.resize(); };
-
-  // 小地图开关
-  var miniMapVisible = false;
-  document.getElementById('btn-minimap').onclick = function () {
-    if (!lf.extension || !lf.extension.miniMap) return layer.msg('小地图插件未加载', { icon: 2 });
-    if (miniMapVisible) {
-      lf.extension.miniMap.hide(); miniMapVisible = false;
-      this.classList.remove('layui-btn-warm'); this.classList.add('layui-btn-primary');
-    } else {
-      lf.extension.miniMap.show(); miniMapVisible = true;
-      this.classList.remove('layui-btn-primary'); this.classList.add('layui-btn-warm');
-    }
-  };
-
-  // 设置按钮 → 跳转到设计页
-  document.getElementById('btn-design').onclick = function () {
-    var url = 'designer.html';
-    if (currentGroupId) url += '?groupId=' + currentGroupId;
-    window.location.href = url;
-  };
-
-  // 窗口自适应
-  window.addEventListener('resize', function () { lf.resize(); });
+  switchMode('view');
 });
