@@ -833,9 +833,40 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   });
 
   // ========== 顶部按钮 ==========
-  // 默认设置（占位）
+  // 默认设置 - 自动启动配置
+  var _moduleId_AutoStart = 0; // 当前自动启动的分组ID
   var btnDefaultConfig = document.getElementById('btn-default-config');
-  if (btnDefaultConfig) btnDefaultConfig.onclick = function () { layer.msg('默认设置功能待实现', { icon: 0 }); };
+  if (btnDefaultConfig) btnDefaultConfig.onclick = function () {
+    var moduleId_Current = currentGroupId || '';
+    var isChecked = moduleId_Current == _moduleId_AutoStart;
+    var html = '';
+    html += '<div style="margin:30px">自动启动：<input type="checkbox" id="cbxAutoStart" ' + (isChecked ? 'checked="checked"' : '') + '/>&nbsp;<span style="color:#999">(勾选后，登录后系统将自动加载导航图。)</span></div>';
+    layer.open({
+      type: 1,
+      title: '默认设置',
+      content: html,
+      area: ['460px', '220px'],
+      btn: ['确定', '取消'],
+      yes: function (index) {
+        var is_checked = $('#cbxAutoStart').prop('checked');
+        $.ajax({
+          type: 'POST',
+          url: '/Common/Ashx/Common_Nav.ashx',
+          data: { act: 'SetAutoStart', moduleId: is_checked ? moduleId_Current : 0 },
+          success: function (retData) {
+            if (is_checked) {
+              _moduleId_AutoStart = moduleId_Current;
+            } else {
+              _moduleId_AutoStart = 0;
+            }
+            layer.close(index);
+            layer.msg('操作成功', { icon: 1 });
+          },
+          error: function (msg) { layer.msg('操作失败', { icon: 2 }); }
+        });
+      }
+    });
+  };
 
   // 设置 → 切换到选中分组的设计模式
   var btnConfig = document.getElementById('btn-config');
