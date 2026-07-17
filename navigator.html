@@ -60,20 +60,21 @@
         .right-panel.collapsed { width: 0; overflow: hidden; border-left: none; }
         .right-panel .panel-title { font-size: 14px; color: #1a1a2e; margin: 0; padding: 14px 20px; border-bottom: 1px solid #eef1f5; font-weight: 600; background: #fafbfc !important; position: sticky; top: 0; z-index: 1; }
         .right-panel #props-content { padding: 0; background: #ffffff !important; min-height: 200px; }
-        .props-section { padding: 16px 20px; border-bottom: 1px solid #f2f4f7; }
+        .props-section { padding: 12px 14px; border-bottom: 1px solid #f2f4f7; }
         .props-section:last-child { border-bottom: none; }
         .props-section-title { font-size: 12px; color: #8c93a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .props-section-title::before { content: ''; display: inline-block; width: 3px; height: 12px; background: #1e9fff; border-radius: 2px; }
         #props-content .layui-form-item { margin-bottom: 14px; display: flex; align-items: center; }
         #props-content .layui-form-item:last-child { margin-bottom: 0; }
-        #props-content .layui-form-label { width: 72px; padding: 0; text-align: left; font-size: 13px; color: #5a6170; flex-shrink: 0; line-height: 34px; }
-        #props-content .layui-input-block { margin-left: 82px; flex: 1; }
+        #props-content .layui-form-label { width: 60px; padding: 0; text-align: left; font-size: 13px; color: #5a6170; flex-shrink: 0; line-height: 34px; }
+        #props-content .layui-input-block { margin-left: 68px; flex: 1; min-width: 0; }
         #props-content .layui-input { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 0 10px; }
         #props-content .layui-input:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
         #props-content .layui-input[disabled] { background: #f0f2f5; color: #999; }
         #props-content .layui-textarea { min-height: 64px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 8px 10px; resize: vertical; }
         .props-actions { padding: 16px 20px; background: #fafbfc; border-top: 1px solid #f2f4f7; position: sticky; bottom: 0; }
         .props-actions .layui-btn { border-radius: 6px; font-size: 13px; height: 36px; }
+
         .props-actions .layui-btn + .layui-btn { margin-left: 8px; }
         .color-field { display: flex; align-items: center; gap: 8px; }
         .color-field .layui-colorpicker { width: 28px; height: 28px; border-radius: 6px; }
@@ -126,6 +127,10 @@
         .canvas-toolbar .tb-btn.tb-save:hover { background: #1890ff; }
         .canvas-toolbar .tb-btn.tb-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
         .canvas-toolbar .tb-btn.tb-export:hover { background: #1890ff; color: #fff; }
+
+        /* 小地图按钮样式 */
+        #ctb-minimap:hover { border-color: #1e9fff !important; color: #1e9fff !important; background: #f0f7ff !important; box-shadow: 0 4px 16px rgba(30,159,255,0.2) !important; }
+        #ctb-minimap.active { border-color: #1e9fff !important; color: #1e9fff !important; background: #e6f7ff !important; }
 
         /* 模式控制 */
         .mode-view .edit-only { display: none !important; }
@@ -202,7 +207,6 @@
             <button class="tb-btn" id="ctb-fit" title="适应"><i class="layui-icon layui-icon-senior"></i></button>
             <button class="tb-btn" id="ctb-reset" title="重置"><i class="layui-icon layui-icon-refresh"></i></button>
             <div class="tb-divider"></div>
-            <button class="tb-btn" id="ctb-minimap"><i class="layui-icon layui-icon-map"></i> 小地图</button>
             <select class="tb-select" id="ctb-edge-type">
                 <option value="custom-bezier">曲线</option>
                 <option value="custom-polyline">折线</option>
@@ -211,6 +215,13 @@
             <div class="tb-divider"></div>
             <button class="tb-btn tb-export" id="ctb-export"><i class="layui-icon layui-icon-export"></i> 导出</button>
             <button class="tb-btn tb-save" id="ctb-save"><i class="layui-icon layui-icon-ok"></i> 保存</button>
+        </div>
+        <!-- 小地图按钮（始终可见） -->
+        <div style="position:absolute;bottom:16px;right:310px;z-index:10;">
+            <button class="tb-btn" id="ctb-minimap" style="box-shadow:0 2px 12px rgba(0,0,0,0.12);background:#fff;border:1px solid #e8ecf0;border-radius:8px;height:36px;padding:0 14px;font-size:13px;color:#5a6170;display:flex;align-items:center;gap:6px;transition:all 0.2s;">
+                <i class="layui-icon layui-icon-map" style="font-size:16px;"></i>
+                <span>小地图</span>
+            </button>
         </div>
         <div id="graph" style="width:100%;height:100%;flex:1;min-height:0;"></div>
     </div>
@@ -247,13 +258,22 @@
     if (Core[_keys[i]]) window.LogicFlow[_keys[i]] = Core[_keys[i]];
   }
   window.h = Core.h;
+  // 调试：检查 Extension 插件加载状态
+  console.log('[CDN] Core:', typeof Core, '| Extension:', typeof window.Extension);
+  if (window.Extension) {
+    console.log('[CDN] Extension keys:', Object.keys(window.Extension));
+  }
   // 注册 Extension 插件
   if (window.Extension && window.Extension.MiniMap) {
+    console.log('[CDN] MiniMap 插件已找到，注册中...');
     window.LogicFlow.MiniMap = window.Extension.MiniMap;
     // 全局注册（LogicFlow 2.x 静态方法）
     if (typeof window.LogicFlow.use === 'function') {
       window.LogicFlow.use(window.Extension.MiniMap);
+      console.log('[CDN] MiniMap 全局注册成功');
     }
+  } else {
+    console.warn('[CDN] MiniMap 插件未找到！Extension:', window.Extension);
   }
 </script>
 

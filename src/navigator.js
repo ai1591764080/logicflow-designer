@@ -272,7 +272,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   getModules();
 
   function buildModuleOptions(moduleVal) {
-    var html = '';
+    var html = '<option value="">-- 请选择模块 --</option>';
     if (_moduleList.length === 0) { html += '<option value="">暂无模块</option>'; }
     for (var i = 0; i < _moduleList.length; i++) {
       var item = _moduleList[i];
@@ -394,7 +394,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   function loadGroupFlow(groupId) {
     $.ajax({
       type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-      data: { act: 'Get_Navigator_DiagramData', moduleGroupId: groupId },
+      data: { act: 'GetData_BNavigator_DiagramDataNew', moduleGroupId: groupId },
       async: false,
       success: function (retData) {
         if (retData && retData !== '') {
@@ -759,12 +759,25 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (currentMode === 'design') {
       renderNodePanel(arg.data);
     } else {
-      // 查看模式：弹出节点信息
-      var text = (arg.data.text && arg.data.text.value) || '未命名节点';
+      // 查看模式：调用模块点击接口
       var props = arg.data.properties || {};
-      var info = '节点：' + text;
-      if (props.owner) info += ' | 负责人：' + props.owner;
-      layer.msg(info, { icon: 0, time: 3000 });
+      var mi = props.moduleInfo || {};
+      var moduleId = mi.Id || props.module || '';
+      var flag = mi.Flag || 0;
+      if (!moduleId) {
+        return layer.msg('该节点未分配模块', { icon: 0 });
+      }
+      $.ajax({
+        type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
+        data: { act: 'GetModuleClick', moduleId: moduleId, flag: flag },
+        success: function (retData) {
+          if (retData) {
+            retData = 'GetParentWindow().' + retData;
+            try { eval(retData); } catch (e) { console.error('[Navigator] 模块点击执行失败:', e); }
+          }
+        },
+        error: function (msg) { console.error('[Navigator] 模块点击请求失败:', msg); }
+      });
     }
   });
   lf.on('edge:click', function (arg) { if (currentMode === 'design') renderEdgePanel(arg.data); });
@@ -903,7 +916,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var mi = props.moduleInfo || {};
       if (!mi.Id && (!props.module || props.module === '')) unassignedNodes.push((node.text && node.text.value) || node.id);
     }
-    //if (unassignedNodes.length > 0) return layer.msg('以下节点未分配模块：' + unassignedNodes.join('、'), { icon: 2, time: 5000 });
+    if (unassignedNodes.length > 0) return layer.msg('以下节点未分配模块：' + unassignedNodes.join('、'), { icon: 2, time: 5000 });
     if (!currentGroupId) return layer.msg('请先选择一个导航分组！', { icon: 2 });
     layer.confirm('确定要保存当前导航图吗？', { icon: 3, title: '保存确认' }, function (index) {
       layer.close(index);
