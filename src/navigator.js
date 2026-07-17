@@ -287,6 +287,23 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // ========== 导航分组 ==========
   var _groupList = [];
   var currentGroupId = null; // 当前查看/设计的分组ID
+  var _moduleId_AutoStart = 0; // 自动启动的分组ID
+
+  // 获取自动启动配置
+  function getAutoStartModuleId() {
+    $.ajax({
+      type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
+      data: { act: 'GetAutoStart' }, async: false,
+      success: function (retData) {
+        if (retData && retData !== '' && retData !== '0') {
+          _moduleId_AutoStart = retData;
+        } else {
+          _moduleId_AutoStart = 0;
+        }
+      },
+      error: function () { _moduleId_AutoStart = 0; }
+    });
+  }
 
   function getGroupList() {
     var list = [];
@@ -382,9 +399,35 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       }
     };
 
-    // 默认加载第一个分组
-    if (_groupList.length > 0) {
-      currentGroupId = _groupList[0].ModuleGroupId;
+    // 获取自动启动配置
+    getAutoStartModuleId();
+
+    // 根据自动启动配置选择分组
+    var defaultGroup = null;
+    if (_moduleId_AutoStart && _moduleId_AutoStart !== 0) {
+      // 查找自动启动的分组
+      for (var g = 0; g < _groupList.length; g++) {
+        if (String(_groupList[g].ModuleGroupId) === String(_moduleId_AutoStart)) {
+          defaultGroup = _groupList[g];
+          break;
+        }
+      }
+    }
+    // 如果没有自动启动或找不到对应分组，默认第一个
+    if (!defaultGroup && _groupList.length > 0) {
+      defaultGroup = _groupList[0];
+    }
+
+    if (defaultGroup) {
+      currentGroupId = defaultGroup.ModuleGroupId;
+      // 更新树选中状态
+      var treeItems = document.querySelectorAll('.nav-tree-item');
+      for (var t = 0; t < treeItems.length; t++) {
+        treeItems[t].classList.toggle('active', treeItems[t].getAttribute('data-group-id') === String(currentGroupId));
+      }
+      // 更新下拉框选中
+      var selectEl = document.getElementById('group-select');
+      if (selectEl) selectEl.value = currentGroupId;
       switchMode('view'); // 初始化为查看模式，禁用编辑操作
       loadGroupFlow(currentGroupId);
     }
