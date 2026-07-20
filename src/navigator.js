@@ -32,6 +32,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   function applyNodeTextStyle(model, style) {
     var props = model.properties || {};
     if (props.textColor) style.color = props.textColor;
+    if (props.fontSize) style.fontSize = parseInt(props.fontSize);
     return style;
   }
 
@@ -719,6 +720,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="layui-form-item"><label class="layui-form-label">背景色</label><div class="layui-input-block"><div class="color-field" id="node-fill-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">边框色</label><div class="layui-input-block"><div class="color-field" id="node-stroke-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">字体色</label><div class="layui-input-block"><div class="color-field" id="node-text-color"></div></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><select name="fontSize" lay-filter="fontSize"><option value="12"' + ((props.fontSize || 14) == 12 ? ' selected' : '') + '>12px</option><option value="14"' + ((props.fontSize || 14) == 14 ? ' selected' : '') + '>14px</option><option value="16"' + (props.fontSize == 16 ? ' selected' : '') + '>16px</option><option value="18"' + (props.fontSize == 18 ? ' selected' : '') + '>18px</option><option value="20"' + (props.fontSize == 20 ? ' selected' : '') + '>20px</option><option value="24"' + (props.fontSize == 24 ? ' selected' : '') + '>24px</option></select></div></div>' +
         '</div>' +
         '<div class="props-actions">' +
           '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
@@ -731,6 +733,19 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     colorpicker.render({ elem: '#node-stroke-color', color: props.stroke || colors.stroke, done: function (c) { lf.setProperties(data.id, { stroke: c }); } });
     currentNodeTextColor = props.textColor || '#333333';
     colorpicker.render({ elem: '#node-text-color', color: currentNodeTextColor, done: function (c) { currentNodeTextColor = c; lf.setProperties(data.id, { textColor: c }); } });
+    // 字体大小实时切换
+    form.on('select(fontSize)', function (obj) {
+      var size = parseInt(obj.value);
+      lf.setProperty(data.id, 'fontSize', size);
+      // 更新节点文本样式
+      var nodeModel = lf.graphModel.getNodeModelById(data.id);
+      if (nodeModel && nodeModel.text) {
+        nodeModel.text.fontSize = size;
+        lf.graphModel.modelMap.forEach(function (model) {
+          if (model.id === data.id) { model.render(); }
+        });
+      }
+    });
     document.getElementById('btn-delete').onclick = function () { lf.deleteNode(currentElementId); clearPanel(); };
   }
 
