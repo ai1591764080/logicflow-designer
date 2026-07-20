@@ -1024,14 +1024,21 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var btnFullscreen = document.getElementById('btn-fullscreen');
   if (btnFullscreen) btnFullscreen.onclick = function () { document.body.classList.toggle('fullscreen-mode'); lf.resize(); };
 
-  // 导出图片（如存在）
-  var btnSnapshot = document.getElementById('btn-snapshot');
-  if (btnSnapshot) btnSnapshot.onclick = function () {
+  // 导出图片
+  var ctbSnapshot = document.getElementById('ctb-snapshot');
+  if (ctbSnapshot) ctbSnapshot.onclick = function () {
     layer.msg('正在生成图片...', { icon: 16, shade: 0.1, time: 0 });
-    html2canvas(document.querySelector('#graph'), { backgroundColor: '#fafafa' }).then(function (canvas) {
+    html2canvas(document.querySelector('#graph'), { backgroundColor: '#fafafa', useCORS: true, scale: 2 }).then(function (canvas) {
       var link = document.createElement('a');
-      link.download = 'navigator.png'; link.href = canvas.toDataURL(); link.click();
-      layer.closeAll(); layer.msg('图片导出成功', { icon: 1 });
+      link.download = 'navigator-' + new Date().getTime() + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      layer.closeAll();
+      layer.msg('图片导出成功', { icon: 1 });
+    }).catch(function (err) {
+      layer.closeAll();
+      layer.msg('图片导出失败', { icon: 2 });
+      console.error('[Navigator] 导出图片失败:', err);
     });
   };
 
