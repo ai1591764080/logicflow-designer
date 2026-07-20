@@ -61,7 +61,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     pluginsOptions: LogicFlow.MiniMap ? {
       miniMap: {
         width: 150, height: 120, showEdge: true, isShowCloseIcon: true,
-        rightPosition: 300, bottomPosition: 10
+        rightPosition: 300, topPosition: 150
       }
     } : {},
   });
@@ -240,7 +240,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     try {
       lf.installPlugin(MiniMapCls, {
         width: 150, height: 120, showEdge: true, isShowCloseIcon: true,
-        rightPosition: 300, bottomPosition: 10
+        rightPosition: 300, topPosition: 150
       });
       console.log('[MiniMap] 安装成功, lf.extension:', lf.extension);
       // 安装后显示
