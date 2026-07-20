@@ -253,6 +253,24 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   })();
 
+  // ========== 键盘快捷键 ==========
+  // Delete 键删除选中元素
+  lf.keyboard.on('delete', function () {
+    if (currentMode !== 'design') return;
+    var selected = lf.getSelectElements(false);
+    if (selected.nodes && selected.nodes.length > 0) {
+      for (var i = 0; i < selected.nodes.length; i++) {
+        lf.deleteNode(selected.nodes[i].id);
+      }
+    }
+    if (selected.edges && selected.edges.length > 0) {
+      for (var j = 0; j < selected.edges.length; j++) {
+        lf.deleteEdge(selected.edges[j].id);
+      }
+    }
+    clearPanel();
+  });
+
   // ========== 模块列表（远程加载） ==========
   var _moduleList = [];
   function getModules() {
