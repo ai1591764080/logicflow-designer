@@ -289,21 +289,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var currentGroupId = null; // 当前查看/设计的分组ID
   var _moduleId_AutoStart = 0; // 自动启动的分组ID
 
-  // 获取自动启动配置
-  function getAutoStartModuleId() {
-    $.ajax({
-      type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-      data: { act: 'GetAutoStart' }, async: false,
-      success: function (retData) {
-        if (retData && retData !== '' && retData !== '0') {
-          _moduleId_AutoStart = retData;
-        } else {
-          _moduleId_AutoStart = 0;
-        }
-      },
-      error: function () { _moduleId_AutoStart = 0; }
-    });
-  }
+ 
 
   function getGroupList() {
     var list = [];
@@ -399,8 +385,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       }
     };
 
-    // 获取自动启动配置
-    getAutoStartModuleId();
 
     // 根据自动启动配置选择分组
     var defaultGroup = null;
@@ -781,10 +765,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     currentElementId = null; currentElementType = null;
     document.getElementById('props-content').innerHTML =
       '<div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>' +
-      '<div class="props-help"><p><b>快捷操作</b></p>' +
-        '<p><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销 &nbsp; <kbd>Ctrl</kbd>+<kbd>Y</kbd> 重做</p>' +
-        '<p><kbd>Delete</kbd> 删除选中元素</p><p>双击节点或连线可编辑文字</p>' +
-        '<p style="margin-top:16px"><button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-clear" style="border-radius:6px;">清空画布</button></p>' +
+      '<div class="props-help">' +
+        '<div class="props-help-title">快捷操作</div>' +
+        '<div class="props-help-item"><span>撤销</span><kbd>Ctrl</kbd>+<kbd>Z</kbd></div>' +
+        '<div class="props-help-item"><span>重做</span><kbd>Ctrl</kbd>+<kbd>Y</kbd></div>' +
+        '<div class="props-help-item"><span>删除选中</span><kbd>Delete</kbd></div>' +
+        '<div class="props-help-item"><span>编辑文字</span><span style="color:#9ca3af">双击节点/连线</span></div>' +
+        '<div class="props-help-btn"><button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-clear">清空画布</button></div>' +
       '</div>';
     form.render();
     document.getElementById('btn-clear').onclick = function () {
@@ -876,8 +863,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   });
 
   // ========== 顶部按钮 ==========
-  // 默认设置 - 自动启动配置
-  var _moduleId_AutoStart = 0; // 当前自动启动的分组ID
   var btnDefaultConfig = document.getElementById('btn-default-config');
   if (btnDefaultConfig) btnDefaultConfig.onclick = function () {
     var moduleId_Current = currentGroupId || '';
