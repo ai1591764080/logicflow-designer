@@ -32,7 +32,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   function applyNodeTextStyle(model, style) {
     var props = model.properties || {};
     if (props.textColor) style.color = props.textColor;
-    if (props.fontSize) style.fontSize = parseInt(props.fontSize);
+    var ts = props.textStyle || {};
+    if (ts.fontSize) style.fontSize = parseInt(ts.fontSize);
     return style;
   }
 
@@ -700,6 +701,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     currentElementId = data.id;
     currentElementType = 'node';
     var props = data.properties || {};
+    var ts = props.textStyle || {};
+    var curFontSize = ts.fontSize || 14;
     var colors = defaultColors[data.type] || { fill: '#ffffff', stroke: '#333333' };
     var textVal = (data.text && data.text.value) || '';
     var mInfo = props.moduleInfo || {};
@@ -720,7 +723,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="layui-form-item"><label class="layui-form-label">背景色</label><div class="layui-input-block"><div class="color-field" id="node-fill-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">边框色</label><div class="layui-input-block"><div class="color-field" id="node-stroke-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">字体色</label><div class="layui-input-block"><div class="color-field" id="node-text-color"></div></div></div>' +
-          '<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><select name="fontSize" lay-filter="fontSize"><option value="12"' + ((props.fontSize || 14) == 12 ? ' selected' : '') + '>12px</option><option value="14"' + ((props.fontSize || 14) == 14 ? ' selected' : '') + '>14px</option><option value="16"' + (props.fontSize == 16 ? ' selected' : '') + '>16px</option><option value="18"' + (props.fontSize == 18 ? ' selected' : '') + '>18px</option><option value="20"' + (props.fontSize == 20 ? ' selected' : '') + '>20px</option><option value="24"' + (props.fontSize == 24 ? ' selected' : '') + '>24px</option></select></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><select name="fontSize" lay-filter="fontSize"><option value="12"' + (curFontSize == 12 ? ' selected' : '') + '>12px</option><option value="14"' + (curFontSize == 14 ? ' selected' : '') + '>14px</option><option value="16"' + (curFontSize == 16 ? ' selected' : '') + '>16px</option><option value="18"' + (curFontSize == 18 ? ' selected' : '') + '>18px</option><option value="20"' + (curFontSize == 20 ? ' selected' : '') + '>20px</option><option value="24"' + (curFontSize == 24 ? ' selected' : '') + '>24px</option></select></div></div>' +
         '</div>' +
         '<div class="props-actions">' +
           '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
@@ -736,14 +739,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     // 字体大小实时切换
     form.on('select(fontSize)', function (obj) {
       var size = parseInt(obj.value);
-      lf.setProperty(data.id, 'fontSize', size);
-      // 更新节点文本样式
       var nodeModel = lf.graphModel.getNodeModelById(data.id);
-      if (nodeModel && nodeModel.text) {
-        nodeModel.text.fontSize = size;
-        lf.graphModel.modelMap.forEach(function (model) {
-          if (model.id === data.id) { model.render(); }
-        });
+      if (nodeModel) {
+        var ts = nodeModel.properties.textStyle || {};
+        ts.fontSize = size;
+        nodeModel.setProperties({ textStyle: ts });
       }
     });
     document.getElementById('btn-delete').onclick = function () { lf.deleteNode(currentElementId); clearPanel(); };
