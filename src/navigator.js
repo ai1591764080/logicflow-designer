@@ -57,6 +57,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     adjustEdgeStartAndEnd: true,
     allowRotate: true,
     allowResize: true,
+    snapline: true,
     plugins: LogicFlow.MiniMap ? [LogicFlow.MiniMap] : [],
     pluginsOptions: LogicFlow.MiniMap ? {
       miniMap: {
@@ -730,10 +731,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
   }
   // 拖拽时使用实际节点尺寸作为拖影
+  var draggingType = '';
   document.querySelectorAll('.node-item').forEach(function (item) {
     item.addEventListener('dragstart', function (e) {
       var type = this.getAttribute('data-type');
       e.dataTransfer.setData('type', type);
+      draggingType = type;
       var size = nodeActualSizes[type];
       if (!size) return;
       var dpr = window.devicePixelRatio || 1;
@@ -749,6 +752,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       e.dataTransfer.setDragImage(canvas, size.w / 2, size.h / 2);
       setTimeout(function () { document.body.removeChild(canvas); }, 0);
     });
+    item.addEventListener('dragend', function () {
+      draggingType = '';
+      lf.removeNodeSnapLine();
+    });
   });
 
   var graphEl = document.getElementById('graph');
@@ -757,6 +764,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   document.addEventListener('dragover', function (e) {
     e.preventDefault();
     lastMouseX = e.clientX; lastMouseY = e.clientY;
+    // 拖拽过程中显示对齐线
+    if (draggingType) {
+      var point = lf.getPointByClient(e.clientX, e.clientY);
+      var size = nodeActualSizes[draggingType] || { w: 80, h: 60 };
+      lf.setNodeSnapLine({ type: draggingType, x: point.canvasOverlayPosition.x, y: point.canvasOverlayPosition.y, width: size.w, height: size.h, properties: {} });
+    }
   });
 
   graphEl.addEventListener('drop', function (e) {
@@ -776,6 +789,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       text: { value: textMap[type] || '新节点', x: x, y: y },
       properties: { owner: '', desc: '', fill: '', stroke: '', strokeWidth: '', module: '' }
     });
+    lf.removeNodeSnapLine();
+    draggingType = '';
     lastMouseX = 0; lastMouseY = 0;
   });
 
