@@ -222,6 +222,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'custom-bezier', view: BezierEdge, model: CustomBezierModel });
   class CustomPolylineModel extends edgeStyleMixin(PolylineEdgeModel) {}
   lf.register({ type: 'custom-polyline', view: PolylineEdge, model: CustomPolylineModel });
+  // 直角折线：继承折线但强制 radius:0 消除圆角
+  class CustomRightPolylineModel extends edgeStyleMixin(PolylineEdgeModel) {
+    getEdgeStyle() { var s = super.getEdgeStyle(); s.radius = 0; return s; }
+  }
+  lf.register({ type: 'custom-right-polyline', view: PolylineEdge, model: CustomRightPolylineModel });
   class CustomLineModel extends edgeStyleMixin(LineEdgeModel) {}
   lf.register({ type: 'custom-line', view: LineEdge, model: CustomLineModel });
 
@@ -792,6 +797,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="layui-form-item"><label class="layui-form-label">线条类型</label><div class="layui-input-block"><select name="edgeType">' +
             '<option value="custom-bezier"' + (currentEdgeType === 'custom-bezier' ? ' selected' : '') + '>〰️ 曲线</option>' +
             '<option value="custom-polyline"' + (currentEdgeType === 'custom-polyline' ? ' selected' : '') + '>📐 折线</option>' +
+            '<option value="custom-right-polyline"' + (currentEdgeType === 'custom-right-polyline' ? ' selected' : '') + '>📐 直角折线</option>' +
             '<option value="custom-line"' + (currentEdgeType === 'custom-line' ? ' selected' : '') + '>📏 直线</option></select></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">线条颜色</label><div class="layui-input-block"><div class="color-field" id="edge-stroke-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">文字颜色</label><div class="layui-input-block"><div class="color-field" id="edge-text-color"></div></div></div>' +
