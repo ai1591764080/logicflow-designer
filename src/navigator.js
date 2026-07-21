@@ -81,11 +81,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'rect', view: RectNode, model: BaseRectModel });
 
   class BaseCircleModel extends CircleNodeModel {
-    resize(resizeInfo) {
-      this.move(resizeInfo.deltaX / 2, resizeInfo.deltaY / 2);
-      this.r = resizeInfo.width / 2;
-      this.setProperties({ r: resizeInfo.width / 2 });
-      return this.getData();
+    constructor(data, graphModel) {
+      super(data, graphModel);
+      this.minWidth = 10;
+      this.minHeight = 10;
     }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
@@ -93,14 +92,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'circle', view: CircleNode, model: BaseCircleModel });
 
   class BaseDiamondModel extends DiamondNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.rx = (data.properties && data.properties.rx) || 50; this.ry = (data.properties && data.properties.ry) || 50; }
-    resize(resizeInfo) {
-      this.move(resizeInfo.deltaX / 2, resizeInfo.deltaY / 2);
-      this.rx = resizeInfo.width / 2;
-      this.ry = resizeInfo.height / 2;
-      this.setProperties({ rx: resizeInfo.width / 2, ry: resizeInfo.height / 2 });
-      return this.getData();
-    }
+    initNodeData(data) { super.initNodeData(data); this.rx = (data.properties && data.properties.rx) || 50; this.ry = (data.properties && data.properties.ry) || 50; this.minWidth = 10; this.minHeight = 10; }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
