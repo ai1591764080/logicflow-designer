@@ -761,6 +761,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       }
     });
     document.getElementById('btn-delete').onclick = function () { lf.deleteNode(currentElementId); clearPanel(); };
+    // 节点文本实时同步
+    var textInput = document.querySelector('input[name="text"]');
+    if (textInput) {
+      textInput.addEventListener('input', function () {
+        lf.updateText(data.id, this.value);
+      });
+    }
   }
 
   function renderEdgePanel(data) {
@@ -805,6 +812,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     colorpicker.render({ elem: '#edge-stroke-color', color: props.stroke || '#333333', done: function (c) { lf.setProperties(data.id, { stroke: c }); } });
     colorpicker.render({ elem: '#edge-text-color', color: props.textColor || props.stroke || '#333333', done: function (c) { lf.setProperties(data.id, { textColor: c }); } });
     document.getElementById('btn-delete').onclick = function () { lf.deleteEdge(currentElementId); clearPanel(); };
+    // 连线文本实时同步
+    var edgeTextInput = document.querySelector('input[name="text"]');
+    if (edgeTextInput) {
+      edgeTextInput.addEventListener('input', function () {
+        lf.updateText(data.id, this.value);
+      });
+    }
   }
 
   function renderBlankPanel() {
