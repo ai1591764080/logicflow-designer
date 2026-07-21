@@ -48,7 +48,10 @@
         .shape-subprocess::before, .shape-subprocess::after { content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: #666; }
         .shape-subprocess::before { left: 6px; }
         .shape-subprocess::after { right: 6px; }
-        .shape-internal-storage { width: 40px; height: 24px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='26'%3E%3Crect x='1' y='1' width='40' height='24' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='1' y1='8' x2='41' y2='8' stroke='%23666' stroke-width='1.5'/%3E%3Cline x1='10' y1='1' x2='10' y2='25' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center; background-size: 100% 100%; }
+        .shape-internal-storage { width: 40px; height: 24px; border: 2px solid #666; background: #fff; position: relative; }
+                .shape-internal-storage::before, .shape-internal-storage::after { content: ''; position: absolute; background: #666; }
+                .shape-internal-storage::before { top: 6px; left: 0; right: 0; height: 2px; }
+                .shape-internal-storage::after { left: 8px; top: 0; bottom: 0; width: 2px; }
         .shape-base-circle { border-radius: 50%; border: 2px solid #666; background: #fff; width: 30px; height: 30px; }
         .shape-base-diamond { width: 24px; height: 24px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin: 4px auto; }
 
