@@ -75,6 +75,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
+    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 80; this.height = (data.properties && data.properties.height) || 60; }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
@@ -83,6 +84,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   class BaseCircleModel extends CircleNodeModel {
     constructor(data, graphModel) {
       super(data, graphModel);
+      this.r = (data && data.properties && data.properties.r) || 40;
       this.minWidth = 10;
       this.minHeight = 10;
     }
@@ -92,14 +94,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'circle', view: CircleNode, model: BaseCircleModel });
 
   class BaseDiamondModel extends DiamondNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.rx = (data.properties && data.properties.rx) || 50; this.ry = (data.properties && data.properties.ry) || 50; this.minWidth = 10; this.minHeight = 10; }
+    initNodeData(data) { super.initNodeData(data); this.rx = (data.properties && data.properties.rx) || 40; this.ry = (data.properties && data.properties.ry) || 40; this.minWidth = 10; this.minHeight = 10; }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'diamond', view: DiamondNode, model: BaseDiamondModel });
 
   class OblongModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 160; this.height = (data.properties && data.properties.height) || 50; this.radius = 4; }
+    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 120; this.height = (data.properties && data.properties.height) || 40; this.radius = 4; }
     setAttributes() { }
     getNodeStyle() { var s = super.getNodeStyle(); s.radius = 4; return applyNodeStyle(this, s, '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
@@ -107,7 +109,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'oblong', view: RectNode, model: OblongModel });
 
   class SharpRectModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 160; this.height = (data.properties && data.properties.height) || 70; this.radius = 0; }
+    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 120; this.height = (data.properties && data.properties.height) || 55; this.radius = 0; }
     setAttributes() { this.radius = 0; }
     getNodeStyle() { var s = super.getNodeStyle(); s.radius = 0; return applyNodeStyle(this, s, '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
@@ -115,7 +117,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'sharp-rect', view: RectNode, model: SharpRectModel });
 
   class RoundRectModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 160; this.height = (data.properties && data.properties.height) || 70; this.radius = 25; }
+    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 120; this.height = (data.properties && data.properties.height) || 55; this.radius = 25; }
     setAttributes() { this.radius = 25; }
     getNodeStyle() { var s = super.getNodeStyle(); s.radius = 25; return applyNodeStyle(this, s, '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
@@ -123,7 +125,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'round-rect', view: RectNode, model: RoundRectModel });
 
   class DocumentModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 140; this.height = (data.properties && data.properties.height) || 80; }
+    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 110; this.height = (data.properties && data.properties.height) || 65; }
     setAttributes() { }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
@@ -142,7 +144,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'document', view: DocumentView, model: DocumentModel });
 
   class SubprocessModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 160; this.height = (data.properties && data.properties.height) || 70; }
+    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 120; this.height = (data.properties && data.properties.height) || 55; }
     setAttributes() { }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
@@ -163,7 +165,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.register({ type: 'subprocess', view: SubprocessView, model: SubprocessModel });
 
   class InternalStorageModel extends RectNodeModel {
-    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 160; this.height = (data.properties && data.properties.height) || 70; }
+    initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 120; this.height = (data.properties && data.properties.height) || 55; }
     setAttributes() { }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
