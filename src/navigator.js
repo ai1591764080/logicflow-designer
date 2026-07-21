@@ -95,7 +95,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   class BaseDiamondModel extends DiamondNodeModel {
     initNodeData(data) { super.initNodeData(data); this.rx = (data.properties && data.properties.rx) || 40; this.ry = (data.properties && data.properties.ry) || 40; this.minWidth = 10; this.minHeight = 10; }
-    getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
+    getNodeStyle() { var s = super.getNodeStyle(); s.radius = 0; return applyNodeStyle(this, s, '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
   lf.register({ type: 'diamond', view: DiamondNode, model: BaseDiamondModel });
