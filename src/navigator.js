@@ -174,9 +174,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     getShape() {
       const { x, y, width, height } = this.props.model;
       const style = this.props.model.getNodeStyle();
-      // 等比例计算内部线条位置（基于默认 160x70）
-      const topLineOffsetY = height * (10 / 70);
-      const leftLineOffsetX = width * (20 / 160);
+      // 等比例计算内部线条位置（基于默认 120x55）
+      const topLineOffsetY = height * (15 / 55);
+      const leftLineOffsetX = width * (20 / 120);
       return h('g', {}, [
         h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
         h('line', { x1: x-width/2, y1: y-height/2+topLineOffsetY, x2: x+width/2, y2: y-height/2+topLineOffsetY, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
