@@ -862,6 +862,30 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.on('node:delete', clearPanel);
   lf.on('edge:delete', clearPanel);
 
+  // 点击节点文字时也显示属性面板（文字层可能拦截了 node:click 事件）
+  var graphContainer = document.getElementById('graph');
+  if (graphContainer) {
+    graphContainer.addEventListener('click', function (e) {
+      if (currentMode !== 'design') return;
+      var target = e.target;
+      var isTextClick = target.tagName === 'text' || target.tagName === 'tspan';
+      if (!isTextClick) return;
+      // 通过点击坐标找到对应的节点
+      var point = lf.getPointByClient(e.clientX, e.clientY);
+      var canvasX = point.canvasOverlayPosition.x;
+      var canvasY = point.canvasOverlayPosition.y;
+      var nodes = lf.graphModel.nodes;
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        var hw = n.width / 2, hh = n.height / 2;
+        if (canvasX >= n.x - hw && canvasX <= n.x + hw && canvasY >= n.y - hh && canvasY <= n.y + hh) {
+          renderNodePanel(n.getData());
+          break;
+        }
+      }
+    });
+  }
+
   // 表单提交
   form.on('submit(saveProps)', function (obj) {
     var f = obj.field;
