@@ -278,7 +278,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // Delete 键删除选中元素
   lf.keyboard.on('delete', function () {
     if (currentMode !== 'design') return;
-    var selected = lf.getSelectElements(false);
+    var selected = lf.getSelectElements(true);
     if (selected.nodes && selected.nodes.length > 0) {
       for (var i = 0; i < selected.nodes.length; i++) {
         lf.deleteNode(selected.nodes[i].id);
