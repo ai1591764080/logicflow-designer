@@ -467,7 +467,17 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (retData && retData !== '') {
           try {
             var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+            var savedTransform = data.transform || null;
             lf.render(data);
+            // 恢复保存的画布缩放和平移位置
+            if (savedTransform) {
+              var tm = lf.graphModel.transformModel;
+              tm.SCALE_X = savedTransform.SCALE_X;
+              tm.SCALE_Y = savedTransform.SCALE_Y;
+              tm.TRANSLATE_X = savedTransform.TRANSLATE_X;
+              tm.TRANSLATE_Y = savedTransform.TRANSLATE_Y;
+              tm.emitGraphTransform('zoom');
+            }
           } catch (e) {
             lf.render({ nodes: [], edges: [] });
           }
@@ -519,9 +529,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         hoverOutline: false,
         edgeSelectedOutline: false,
       });
-      // 重置画布缩放和位置
-      lf.resetZoom();
-      lf.resetTranslate();
+      // 画布位置由保存的数据控制，不重置
     } else {
       // 设计模式: 显示图形/属性/工具栏, 隐藏分组
       if (shapesSection) shapesSection.style.display = 'block';
@@ -1064,6 +1072,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var ctbSave = document.getElementById('ctb-save');
   if (ctbSave) ctbSave.onclick = function () {
     var data = lf.getGraphData();
+    // 保存当前画布缩放和平移位置
+    var transform = lf.getTransform();
+    data.transform = { SCALE_X: transform.SCALE_X, SCALE_Y: transform.SCALE_Y, TRANSLATE_X: transform.TRANSLATE_X, TRANSLATE_Y: transform.TRANSLATE_Y };
     if (!data.nodes || data.nodes.length === 0) return layer.msg('画布为空，无法保存！', { icon: 2 });
     var unassignedNodes = [];
     for (var i = 0; i < data.nodes.length; i++) {
