@@ -65,6 +65,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       }
     } : {},
   });
+  lf.updateEditConfig({ hoverOutline: false });
 
   lf.setTheme({
     edgeAdjust: {
@@ -515,6 +516,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         nodeTextDraggable: false,
         edgeTextDraggable: false,
         hideAnchors: true,
+        hoverOutline: false,
       });
       // 重置画布缩放和位置
       lf.resetZoom();
@@ -538,6 +540,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         nodeTextDraggable: true,
         edgeTextDraggable: true,
         hideAnchors: false,
+        hoverOutline: true,
       });
     }
     setTimeout(function() { lf.resize(); }, 100);
