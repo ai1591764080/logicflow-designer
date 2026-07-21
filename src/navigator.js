@@ -127,7 +127,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     getShape() {
       const { x, y, width, height } = this.props.model;
       const style = this.props.model.getNodeStyle();
-      const w = width, ht = height, bottomY = y + ht / 2, amp = 12;
+      // 等比例计算曲线振幅（基于默认 140x80）
+      const w = width, ht = height, bottomY = y + ht / 2;
+      const amp = ht * (12 / 80);
       const pathD = `M ${x - w/2} ${y - ht/2} L ${x + w/2} ${y - ht/2} L ${x + w/2} ${bottomY} C ${x + w/6} ${bottomY - amp}, ${x + w/6} ${bottomY - amp}, ${x} ${bottomY} C ${x - w/6} ${bottomY + amp}, ${x - w/6} ${bottomY + amp}, ${x - w/2} ${bottomY} Z`;
       return h('g', {}, [h('path', { d: pathD, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })]);
     }
@@ -144,10 +146,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     getShape() {
       const { x, y, width, height } = this.props.model;
       const style = this.props.model.getNodeStyle();
+      // 等比例计算内部线条位置（基于默认 160x70）
+      const lineOffsetX = width * (30 / 160);
       return h('g', {}, [
         h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2+30, y1: y-height/2, x2: x-width/2+30, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x+width/2-30, y1: y-height/2, x2: x+width/2-30, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
+        h('line', { x1: x-width/2+lineOffsetX, y1: y-height/2, x2: x-width/2+lineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
+        h('line', { x1: x+width/2-lineOffsetX, y1: y-height/2, x2: x+width/2-lineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
       ]);
     }
   }
@@ -163,10 +167,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     getShape() {
       const { x, y, width, height } = this.props.model;
       const style = this.props.model.getNodeStyle();
+      // 等比例计算内部线条位置（基于默认 160x70）
+      const topLineOffsetY = height * (10 / 70);
+      const leftLineOffsetX = width * (20 / 160);
       return h('g', {}, [
         h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2, y1: y-height/2+10, x2: x+width/2, y2: y-height/2+10, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2+20, y1: y-height/2, x2: x-width/2+20, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
+        h('line', { x1: x-width/2, y1: y-height/2+topLineOffsetY, x2: x+width/2, y2: y-height/2+topLineOffsetY, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
+        h('line', { x1: x-width/2+leftLineOffsetX, y1: y-height/2, x2: x-width/2+leftLineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
       ]);
     }
   }
