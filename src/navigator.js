@@ -134,9 +134,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     getShape() {
       const { x, y, width, height } = this.props.model;
       const style = this.props.model.getNodeStyle();
-      // 等比例计算曲线振幅（基于默认 140x80）
+      // 等比例计算曲线振幅（基于默认 110x65）
       const w = width, ht = height, bottomY = y + ht / 2;
-      const amp = ht * (12 / 80);
+      const amp = ht * (15 / 65);
       const pathD = `M ${x - w/2} ${y - ht/2} L ${x + w/2} ${y - ht/2} L ${x + w/2} ${bottomY} C ${x + w/6} ${bottomY - amp}, ${x + w/6} ${bottomY - amp}, ${x} ${bottomY} C ${x - w/6} ${bottomY + amp}, ${x - w/6} ${bottomY + amp}, ${x - w/2} ${bottomY} Z`;
       return h('g', {}, [h('path', { d: pathD, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })]);
     }
