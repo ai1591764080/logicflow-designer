@@ -1277,6 +1277,81 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
   };
 
+  // ========== 角色选择树 ==========
+  var _roleTreeData = null;
+  var _selectedRoleId = '0'; // 默认全部
+
+  function loadRoleTree() {
+    $.ajax({
+      type: 'GET', url: '/OA/Ashx/OA_TodoCenter.ashx?act=roleTree',
+      success: function (retData) {
+        try {
+          _roleTreeData = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+          renderRoleTree();
+        } catch (e) { console.error('[Navigator] 角色树解析失败:', e); }
+      },
+      error: function () { console.warn('[Navigator] 角色树加载失败'); }
+    });
+  }
+
+  function renderRoleTree() {
+    var container = document.getElementById('role-tree');
+    if (!container || !_roleTreeData) return;
+    var html = '';
+    // 根节点（全部）
+    html += '<div class="role-item role-root' + (_selectedRoleId === String(_roleTreeData.id) ? ' role-active' : '') + '" data-id="' + _roleTreeData.id + '">' + _roleTreeData.text + '</div>';
+    // 子节点
+    if (_roleTreeData.children && _roleTreeData.children.length > 0) {
+      for (var i = 0; i < _roleTreeData.children.length; i++) {
+        var child = _roleTreeData.children[i];
+        html += '<div class="role-item' + (_selectedRoleId === String(child.id) ? ' role-active' : '') + '" data-id="' + child.id + '"><span class="role-indent"></span>' + child.text + '</div>';
+      }
+    }
+    container.innerHTML = html;
+    // 绑定点击事件
+    var items = container.querySelectorAll('.role-item');
+    for (var j = 0; j < items.length; j++) {
+      items[j].onclick = function () {
+        _selectedRoleId = this.getAttribute('data-id');
+        var labelEl = document.getElementById('role-label');
+        if (labelEl) labelEl.textContent = this.textContent.trim();
+        // 更新高亮
+        var allItems = container.querySelectorAll('.role-item');
+        for (var k = 0; k < allItems.length; k++) allItems[k].classList.remove('role-active');
+        this.classList.add('role-active');
+        // 关闭下拉
+        var dropdown = document.getElementById('role-dropdown');
+        if (dropdown) dropdown.style.display = 'none';
+      };
+    }
+  }
+
+  // 角色选择按钮点击
+  var btnRoleSelect = document.getElementById('btn-role-select');
+  if (btnRoleSelect) {
+    btnRoleSelect.onclick = function (e) {
+      e.stopPropagation();
+      var dropdown = document.getElementById('role-dropdown');
+      if (!dropdown) return;
+      if (dropdown.style.display === 'none') {
+        if (!_roleTreeData) loadRoleTree();
+        dropdown.style.display = 'block';
+      } else {
+        dropdown.style.display = 'none';
+      }
+    };
+  }
+  // 点击外部关闭角色下拉
+  document.addEventListener('click', function (e) {
+    var selector = document.getElementById('role-selector');
+    if (selector && !selector.contains(e.target)) {
+      var dropdown = document.getElementById('role-dropdown');
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  });
+  // 初始加载角色树
+  loadRoleTree();
+
   // 保存
   var ctbSave = document.getElementById('ctb-save');
   if (ctbSave) ctbSave.onclick = function () {
@@ -1298,7 +1373,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var jsonStr = JSON.stringify(data);
       $.ajax({
         type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-        data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, data: jsonStr },
+        data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: _selectedRoleId, data: jsonStr },
         success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
         error: function () { layer.msg('保存失败!', { icon: 1, time: 2000 }); }
       });
