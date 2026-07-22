@@ -469,10 +469,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   }
 
-  // ========== 空画布提示 ==========
+  // ========== 空画布提示（仅查看模式显示） ==========
   function updateEmptyState() {
     var el = document.getElementById('empty-canvas');
     if (!el) return;
+    if (currentMode !== 'view') { el.style.display = 'none'; return; }
     var graphData = lf.getGraphData();
     var isEmpty = (!graphData.nodes || graphData.nodes.length === 0) && (!graphData.edges || graphData.edges.length === 0);
     el.style.display = isEmpty ? 'block' : 'none';
