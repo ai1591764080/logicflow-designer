@@ -27,6 +27,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     style.fill = props.fill || defaultFill;
     style.stroke = props.stroke || defaultStroke;
     style.strokeWidth = props.strokeWidth ? parseInt(props.strokeWidth) : 2;
+    if (props.strokeDasharray) style.strokeDasharray = props.strokeDasharray;
     return style;
   }
   function applyNodeTextStyle(model, style) {
@@ -150,7 +151,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       const w = width, ht = height, bottomY = y + ht / 2;
       const amp = ht * 0.15;
       const pathD = `M ${x - w/2} ${y - ht/2} L ${x + w/2} ${y - ht/2} L ${x + w/2} ${bottomY} C ${x + w/4} ${bottomY - amp}, ${x + w*0.08} ${bottomY - amp}, ${x} ${bottomY} C ${x - w*0.08} ${bottomY + amp}, ${x - w/4} ${bottomY + amp}, ${x - w/2} ${bottomY} Z`;
-      return h('g', {}, [h('path', { d: pathD, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })]);
+      return h('g', {}, [h('path', { d: pathD, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2, strokeDasharray: style.strokeDasharray || 'none' })]);
     }
   }
   lf.register({ type: 'document', view: DocumentView, model: DocumentModel });
@@ -168,9 +169,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       // 等比例计算内部线条位置（基于默认 160x70）
       const lineOffsetX = width * (30 / 160);
       return h('g', {}, [
-        h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2+lineOffsetX, y1: y-height/2, x2: x-width/2+lineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x+width/2-lineOffsetX, y1: y-height/2, x2: x+width/2-lineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
+        h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2, strokeDasharray: style.strokeDasharray || 'none' }),
+        h('line', { x1: x-width/2+lineOffsetX, y1: y-height/2, x2: x-width/2+lineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2, strokeDasharray: style.strokeDasharray || 'none' }),
+        h('line', { x1: x+width/2-lineOffsetX, y1: y-height/2, x2: x+width/2-lineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2, strokeDasharray: style.strokeDasharray || 'none' })
       ]);
     }
   }
@@ -190,9 +191,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       const topLineOffsetY = height * (15 / 55);
       const leftLineOffsetX = width * (20 / 120);
       return h('g', {}, [
-        h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2, y1: y-height/2+topLineOffsetY, x2: x+width/2, y2: y-height/2+topLineOffsetY, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 }),
-        h('line', { x1: x-width/2+leftLineOffsetX, y1: y-height/2, x2: x-width/2+leftLineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })
+        h('rect', { x: x-width/2, y: y-height/2, width: width, height: height, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2, strokeDasharray: style.strokeDasharray || 'none' }),
+        h('line', { x1: x-width/2, y1: y-height/2+topLineOffsetY, x2: x+width/2, y2: y-height/2+topLineOffsetY, stroke: style.stroke, strokeWidth: style.strokeWidth || 2, strokeDasharray: style.strokeDasharray || 'none' }),
+        h('line', { x1: x-width/2+leftLineOffsetX, y1: y-height/2, x2: x-width/2+leftLineOffsetX, y2: y+height/2, stroke: style.stroke, strokeWidth: style.strokeWidth || 2, strokeDasharray: style.strokeDasharray || 'none' })
       ]);
     }
   }
@@ -847,6 +848,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="layui-form-item"><label class="layui-form-label">背景色</label><div class="layui-input-block"><div class="color-field" id="node-fill-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">边框色</label><div class="layui-input-block"><div class="color-field" id="node-stroke-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">字体色</label><div class="layui-input-block"><div class="color-field" id="node-text-color"></div></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">边框样式</label><div class="layui-input-block"><select name="nodeStrokeDasharray" lay-filter="nodeStrokeDasharray"><option value=""' + (!props.strokeDasharray ? ' selected' : '') + '>实线</option><option value="5,5"' + (props.strokeDasharray === '5,5' ? ' selected' : '') + '>虚线</option></select></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><select name="fontSize" lay-filter="fontSize"><option value="12"' + (curFontSize == 12 ? ' selected' : '') + '>12px</option><option value="14"' + (curFontSize == 14 ? ' selected' : '') + '>14px</option><option value="16"' + (curFontSize == 16 ? ' selected' : '') + '>16px</option><option value="18"' + (curFontSize == 18 ? ' selected' : '') + '>18px</option><option value="20"' + (curFontSize == 20 ? ' selected' : '') + '>20px</option><option value="24"' + (curFontSize == 24 ? ' selected' : '') + '>24px</option></select></div></div>' +
         '</div>' +
         '<div class="props-actions">' +
@@ -859,6 +861,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     colorpicker.render({ elem: '#node-stroke-color', color: props.stroke || colors.stroke, done: function (c) { lf.setProperties(data.id, { stroke: c }); } });
     currentNodeTextColor = props.textColor || '#333333';
     colorpicker.render({ elem: '#node-text-color', color: currentNodeTextColor, done: function (c) { currentNodeTextColor = c; lf.setProperties(data.id, { textColor: c }); } });
+    // 边框样式实时同步
+    form.on('select(nodeStrokeDasharray)', function (obj) {
+      lf.setProperties(data.id, { strokeDasharray: obj.value });
+    });
     // 字体大小实时切换
     form.on('select(fontSize)', function (obj) {
       var size = parseInt(obj.value);
