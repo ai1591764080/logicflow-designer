@@ -129,6 +129,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   class DocumentModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 110; this.height = (data.properties && data.properties.height) || 65; }
     setAttributes() { }
+    // 等比例缩放：保持默认宽高比 110:65
+    resize(resizeInfo) {
+      var ratio = 110 / 65;
+      var w = resizeInfo.width, h = resizeInfo.height;
+      if (w / h > ratio) { w = h * ratio; } else { h = w / ratio; }
+      resizeInfo.width = w; resizeInfo.height = h;
+      return RectNodeModel.prototype.resize.call(this, resizeInfo);
+    }
     getNodeStyle() { return applyNodeStyle(this, super.getNodeStyle(), '#ffffff', '#333333'); }
     getTextStyle() { return applyNodeTextStyle(this, super.getTextStyle()); }
   }
