@@ -159,6 +159,12 @@
         .lf-node { cursor: pointer; }
         .lf-edge { cursor: default; }
 
+        /* 框选按钮激活状态 */
+        .canvas-toolbar .tb-btn.tb-active { background: #1e9fff; border-color: #1e9fff; color: #fff; }
+
+        /* 框选矩形样式 */
+        .lf-selection-select { position: absolute; border: 2px dashed #1e9fff; background: rgba(30,159,255,0.08); z-index: 100; pointer-events: none; }
+
         /* 右键菜单 */
         #context-menu { display: none; position: absolute; z-index: 9999; background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 0; min-width: 120px; }
         #context-menu .menu-item { padding: 8px 15px; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; }
@@ -225,6 +231,8 @@
             <button class="tb-btn" id="ctb-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
             <button class="tb-btn" id="ctb-fit" title="适应"><i class="layui-icon layui-icon-senior"></i></button>
             <button class="tb-btn" id="ctb-reset" title="重置"><i class="layui-icon layui-icon-refresh"></i></button>
+            <div class="tb-divider"></div>
+            <button class="tb-btn" id="ctb-select" title="框选"><i class="layui-icon layui-icon-slider"></i></button>
             <div class="tb-divider"></div>
             <select class="tb-select" id="ctb-edge-type">
                 <option value="custom-bezier">曲线</option>
@@ -294,6 +302,16 @@
     }
   } else {
     console.warn('[CDN] MiniMap 插件未找到！Extension:', window.Extension);
+  }
+  // 注册 SelectionSelect 框选插件
+  if (window.Extension && window.Extension.SelectionSelect) {
+    window.LogicFlow.SelectionSelect = window.Extension.SelectionSelect;
+    if (typeof window.LogicFlow.use === 'function') {
+      window.LogicFlow.use(window.Extension.SelectionSelect);
+      console.log('[CDN] SelectionSelect 全局注册成功');
+    }
+  } else {
+    console.warn('[CDN] SelectionSelect 插件未找到！');
   }
 </script>
 

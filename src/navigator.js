@@ -524,6 +524,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       if (shapesSection) shapesSection.style.display = 'none';
       if (rightPanel) rightPanel.style.display = 'none';
       if (canvasToolbar) canvasToolbar.style.display = 'none';
+      // 关闭框选模式
+      if (selectionActive && lf.closeSelectionSelect) {
+        lf.closeSelectionSelect();
+        selectionActive = false;
+        var ctbSelectBtn = document.getElementById('ctb-select');
+        if (ctbSelectBtn) ctbSelectBtn.classList.remove('tb-active');
+      }
       for (var j = 0; j < viewOnlyEls.length; j++) viewOnlyEls[j].style.display = '';
       // 禁用所有编辑操作（静默模式）
       lf.updateEditConfig({
@@ -1200,6 +1207,26 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   if (ctbZoomOut) ctbZoomOut.onclick = function () { lf.zoom(false); };
   if (ctbFit) ctbFit.onclick = function () { lf.fitView(80); };
   if (ctbReset) ctbReset.onclick = function () { lf.resetZoom(); };
+
+  // 框选批量移动
+  var selectionActive = false;
+  var ctbSelect = document.getElementById('ctb-select');
+  if (ctbSelect) {
+    ctbSelect.onclick = function () {
+      if (currentMode !== 'design') return layer.msg('仅设计模式支持框选', { icon: 0 });
+      if (!lf.openSelectionSelect) return layer.msg('框选插件未加载', { icon: 2 });
+      selectionActive = !selectionActive;
+      if (selectionActive) {
+        lf.openSelectionSelect();
+        this.classList.add('tb-active');
+        this.title = '取消框选';
+      } else {
+        lf.closeSelectionSelect();
+        this.classList.remove('tb-active');
+        this.title = '框选';
+      }
+    };
+  }
 
   // 小地图（默认显示）
   var miniMapVisible = true;
