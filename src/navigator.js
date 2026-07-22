@@ -139,7 +139,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       // 等比例计算曲线振幅（基于默认 110x65）
       const w = width, ht = height, bottomY = y + ht / 2;
       const amp = ht * (15 / 65);
-      const pathD = `M ${x - w/2} ${y - ht/2} L ${x + w/2} ${y - ht/2} L ${x + w/2} ${bottomY} C ${x + w/6} ${bottomY + amp}, ${x + w/6} ${bottomY + amp}, ${x} ${bottomY + amp} C ${x - w/6} ${bottomY + amp}, ${x - w/6} ${bottomY + amp}, ${x - w/2} ${bottomY} Z`;
+      const pathD = `M ${x - w/2} ${y - ht/2} L ${x + w/2} ${y - ht/2} L ${x + w/2} ${bottomY} C ${x + w/6} ${bottomY + amp}, ${x + w/6} ${bottomY + amp}, ${x} ${bottomY + amp} C ${x - w/6} ${bottomY - amp}, ${x - w/6} ${bottomY - amp}, ${x - w/2} ${bottomY} Z`;
       return h('g', {}, [h('path', { d: pathD, fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth || 2 })]);
     }
   }
@@ -707,7 +707,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         ctx.beginPath(); ctx.moveTo(1, 1); ctx.lineTo(w - 1, 1);
         ctx.lineTo(w - 1, h - 1);
         ctx.bezierCurveTo(w * 2 / 3, h - 1 + amp, w * 2 / 3, h - 1 + amp, w / 2, h - 1 + amp);
-        ctx.bezierCurveTo(w / 3, h - 1 + amp, w / 3, h - 1 + amp, 1, h - 1);
+        ctx.bezierCurveTo(w / 3, h - 1 - amp, w / 3, h - 1 - amp, 1, h - 1);
         ctx.closePath(); ctx.fill(); ctx.stroke(); break;
       case 'subprocess':
         ctx.fillRect(1, 1, w - 2, h - 2); ctx.strokeRect(1, 1, w - 2, h - 2);
