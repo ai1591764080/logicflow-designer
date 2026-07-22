@@ -132,12 +132,11 @@
 
         /* 角色选择器 */
         .role-selector { position: relative; }
-        .role-dropdown { position: absolute; top: 100%; right: 0; margin-top: 4px; background: #fff; border: 1px solid #e8ecf0; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 9999; min-width: 160px; max-height: 300px; overflow-y: auto; padding: 6px 0; }
-        .role-dropdown .role-item { padding: 8px 16px; cursor: pointer; font-size: 13px; color: #333; display: flex; align-items: center; gap: 6px; transition: background 0.15s; }
-        .role-dropdown .role-item:hover { background: #f0f7ff; color: #1890ff; }
-        .role-dropdown .role-item.role-active { background: #e6f4ff; color: #1890ff; font-weight: 600; }
-        .role-dropdown .role-item.role-root { font-weight: 600; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 4px; }
-        .role-dropdown .role-item .role-indent { display: inline-block; width: 16px; }
+        .role-dropdown { position: absolute; top: 100%; right: 0; margin-top: 4px; background: #fff; border: 1px solid #e8ecf0; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 9999; min-width: 180px; max-height: 300px; overflow-y: auto; padding: 8px 4px; }
+        .role-dropdown .layui-tree { font-size: 13px; }
+        .role-dropdown .layui-tree-entry { padding: 4px 12px; border-radius: 4px; }
+        .role-dropdown .layui-tree-entry:hover { background: #f0f7ff; }
+        .role-dropdown .layui-tree-txt { color: #333; font-size: 13px; }
 
         /* 画布工具栏（设计模式） */
         .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: none; align-items: center; gap: 4px; flex-shrink: 0; }

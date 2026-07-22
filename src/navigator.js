@@ -1277,53 +1277,51 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
   };
 
-  // ========== 角色选择树 ==========
-  var _roleTreeData = null;
+  // ========== 角色选择树（layui tree） ==========
   var _selectedRoleId = '0'; // 默认全部
+  var _roleTreeRendered = false;
 
-  function loadRoleTree() {
+  function loadAndRenderRoleTree() {
     $.ajax({
       type: 'GET', url: '/OA/Ashx/OA_TodoCenter.ashx?act=roleTree',
       success: function (retData) {
         try {
-          _roleTreeData = (typeof retData === 'string') ? JSON.parse(retData) : retData;
-          renderRoleTree();
+          var treeData = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+          // 转换为 layui tree 数据格式
+          var layuiData = [];
+          if (treeData.children && treeData.children.length > 0) {
+            for (var i = 0; i < treeData.children.length; i++) {
+              var child = treeData.children[i];
+              layuiData.push({
+                id: child.id,
+                title: child.text,
+                spread: true
+              });
+            }
+          }
+          // 使用 layui tree 渲染
+          layui.use(['tree'], function () {
+            var tree = layui.tree;
+            if (_roleTreeRendered) return;
+            _roleTreeRendered = true;
+            tree.render({
+              elem: '#role-tree',
+              data: layuiData,
+              showLine: false,
+              onlyIconControl: true,
+              click: function (obj) {
+                _selectedRoleId = String(obj.data.id);
+                document.getElementById('role-label').textContent = obj.data.title;
+                // 关闭下拉
+                var dropdown = document.getElementById('role-dropdown');
+                if (dropdown) dropdown.style.display = 'none';
+              }
+            });
+          });
         } catch (e) { console.error('[Navigator] 角色树解析失败:', e); }
       },
       error: function () { console.warn('[Navigator] 角色树加载失败'); }
     });
-  }
-
-  function renderRoleTree() {
-    var container = document.getElementById('role-tree');
-    if (!container || !_roleTreeData) return;
-    var html = '';
-    // 根节点（全部）
-    html += '<div class="role-item role-root' + (_selectedRoleId === String(_roleTreeData.id) ? ' role-active' : '') + '" data-id="' + _roleTreeData.id + '">' + _roleTreeData.text + '</div>';
-    // 子节点
-    if (_roleTreeData.children && _roleTreeData.children.length > 0) {
-      for (var i = 0; i < _roleTreeData.children.length; i++) {
-        var child = _roleTreeData.children[i];
-        html += '<div class="role-item' + (_selectedRoleId === String(child.id) ? ' role-active' : '') + '" data-id="' + child.id + '"><span class="role-indent"></span>' + child.text + '</div>';
-      }
-    }
-    container.innerHTML = html;
-    // 绑定点击事件
-    var items = container.querySelectorAll('.role-item');
-    for (var j = 0; j < items.length; j++) {
-      items[j].onclick = function () {
-        _selectedRoleId = this.getAttribute('data-id');
-        var labelEl = document.getElementById('role-label');
-        if (labelEl) labelEl.textContent = this.textContent.trim();
-        // 更新高亮
-        var allItems = container.querySelectorAll('.role-item');
-        for (var k = 0; k < allItems.length; k++) allItems[k].classList.remove('role-active');
-        this.classList.add('role-active');
-        // 关闭下拉
-        var dropdown = document.getElementById('role-dropdown');
-        if (dropdown) dropdown.style.display = 'none';
-      };
-    }
   }
 
   // 角色选择按钮点击
@@ -1334,7 +1332,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var dropdown = document.getElementById('role-dropdown');
       if (!dropdown) return;
       if (dropdown.style.display === 'none') {
-        if (!_roleTreeData) loadRoleTree();
+        if (!_roleTreeRendered) loadAndRenderRoleTree();
         dropdown.style.display = 'block';
       } else {
         dropdown.style.display = 'none';
@@ -1350,7 +1348,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   });
   // 初始加载角色树
-  loadRoleTree();
+  loadAndRenderRoleTree();
 
   // 保存
   var ctbSave = document.getElementById('ctb-save');
