@@ -216,7 +216,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         var edgeStyle = this.getEdgeStyle();
         style.fontSize = 12;
         style.color = props.textColor || edgeStyle.stroke || '#666';
-        style.background = { fill: '#fff', stroke: '#e6e6e6', radius: 2 };
+        style.background = {};
         return style;
       }
       getTextPosition() {
