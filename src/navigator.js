@@ -917,24 +917,24 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       '<form class="layui-form" lay-filter="propsForm">' +
         '<div class="props-section"><div class="props-section-title">文本信息</div>' +
           '<div class="layui-form-item"><label class="layui-form-label">连线文案</label><div class="layui-input-block"><input type="text" name="text" value="' + textVal + '" placeholder="如：同意、拒绝" class="layui-input"></div></div>' +
-          '<div class="layui-form-item"><label class="layui-form-label">文本位置</label><div class="layui-input-block"><select name="textPosition">' +
+          '<div class="layui-form-item"><label class="layui-form-label">文本位置</label><div class="layui-input-block"><select name="textPosition" lay-filter="textPosition">' +
             '<option value="start"' + (props.textPosition === 'start' ? ' selected' : '') + '>起点附近</option>' +
             '<option value="middle"' + (!props.textPosition || props.textPosition === 'middle' ? ' selected' : '') + '>中间位置</option>' +
             '<option value="end"' + (props.textPosition === 'end' ? ' selected' : '') + '>终点附近</option></select></div></div>' +
         '</div>' +
         '<div class="props-section"><div class="props-section-title">线条样式</div>' +
-          '<div class="layui-form-item"><label class="layui-form-label">线条类型</label><div class="layui-input-block"><select name="edgeType">' +
+          '<div class="layui-form-item"><label class="layui-form-label">线条类型</label><div class="layui-input-block"><select name="edgeType" lay-filter="edgeType">' +
             '<option value="custom-bezier"' + (currentEdgeType === 'custom-bezier' ? ' selected' : '') + '>〰️ 曲线</option>' +
             '<option value="custom-polyline"' + (currentEdgeType === 'custom-polyline' ? ' selected' : '') + '>📐 折线</option>' +
             '<option value="custom-right-polyline"' + (currentEdgeType === 'custom-right-polyline' ? ' selected' : '') + '>📐 直角折线</option>' +
             '<option value="custom-line"' + (currentEdgeType === 'custom-line' ? ' selected' : '') + '>📏 直线</option></select></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">线条颜色</label><div class="layui-input-block"><div class="color-field" id="edge-stroke-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">文字颜色</label><div class="layui-input-block"><div class="color-field" id="edge-text-color"></div></div></div>' +
-          '<div class="layui-form-item"><label class="layui-form-label">线条粗细</label><div class="layui-input-block"><select name="strokeWidth">' +
+          '<div class="layui-form-item"><label class="layui-form-label">线条粗细</label><div class="layui-input-block"><select name="strokeWidth" lay-filter="strokeWidth">' +
             '<option value="1"' + (props.strokeWidth == 1 ? ' selected' : '') + '>1 px</option>' +
             '<option value="2"' + (!props.strokeWidth || props.strokeWidth == 2 ? ' selected' : '') + '>2 px</option>' +
             '<option value="3"' + (props.strokeWidth == 3 ? ' selected' : '') + '>3 px</option></select></div></div>' +
-          '<div class="layui-form-item"><label class="layui-form-label">线条样式</label><div class="layui-input-block"><select name="strokeDasharray">' +
+          '<div class="layui-form-item"><label class="layui-form-label">线条样式</label><div class="layui-input-block"><select name="strokeDasharray" lay-filter="strokeDasharray">' +
             '<option value=""' + (!props.strokeDasharray ? ' selected' : '') + '>实线</option>' +
             '<option value="5,5"' + (props.strokeDasharray === '5,5' ? ' selected' : '') + '>虚线</option></select></div></div>' +
         '</div>' +
@@ -982,11 +982,21 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
     // 线条粗细实时同步
     form.on('select(strokeWidth)', function (obj) {
-      lf.setProperties(data.id, { strokeWidth: parseInt(obj.value) });
+      var val = parseInt(obj.value);
+      var eModel = lf.graphModel.getEdgeModelById(data.id);
+      if (eModel) {
+        eModel.style = Object.assign({}, eModel.style, { strokeWidth: val });
+        lf.setProperties(data.id, { strokeWidth: val });
+      }
     });
     // 线条样式实时同步
     form.on('select(strokeDasharray)', function (obj) {
-      lf.setProperties(data.id, { strokeDasharray: obj.value });
+      var val = obj.value;
+      var eModel = lf.graphModel.getEdgeModelById(data.id);
+      if (eModel) {
+        eModel.style = Object.assign({}, eModel.style, { strokeDasharray: val });
+        lf.setProperties(data.id, { strokeDasharray: val });
+      }
     });
   }
 
