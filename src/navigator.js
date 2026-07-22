@@ -72,7 +72,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     edgeAdjust: {
       r: 6, fill: '#1e9fff', stroke: '#fff', strokeWidth: 2,
       hover: { r: 8, fill: '#1890ff' }
-    }
+    },
+    // 箭头改为长三角形：长度20，宽度5
+    arrow: { offset: 20, verticalLength: 5, strokeLinecap: 'round', strokeLinejoin: 'round' }
   });
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
