@@ -159,6 +159,9 @@
         .lf-node { cursor: pointer; }
         .lf-edge { cursor: default; }
 
+        /* 框选按钮激活状态 */
+        .canvas-toolbar .tb-btn.tb-active { background: #1e9fff; border-color: #1e9fff; color: #fff; }
+
         /* 框选矩形样式 */
         .lf-selection-select { position: absolute; border: 2px dashed #1e9fff; background: rgba(30,159,255,0.08); z-index: 100; pointer-events: none; }
 
@@ -229,6 +232,7 @@
             <button class="tb-btn" id="ctb-fit" title="适应"><i class="layui-icon layui-icon-senior"></i></button>
             <button class="tb-btn" id="ctb-reset" title="重置"><i class="layui-icon layui-icon-refresh"></i></button>
             <div class="tb-divider"></div>
+            <button class="tb-btn" id="ctb-select" title="框选"><i class="layui-icon layui-icon-slider"></i></button>
             <select class="tb-select" id="ctb-edge-type">
                 <option value="custom-bezier">曲线</option>
                 <option value="custom-polyline">折线</option>
