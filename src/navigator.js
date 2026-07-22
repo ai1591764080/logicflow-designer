@@ -245,7 +245,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // 渲染空画布
   lf.render({ nodes: [], edges: [] });
-  setTimeout(function() { lf.resize(); }, 100);
+  setTimeout(function() { lf.resize(); updateEmptyState(); }, 100);
   window.lf = lf;
 
   // 确保 MiniMap 插件已安装并显示
@@ -469,6 +469,15 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   }
 
+  // ========== 空画布提示 ==========
+  function updateEmptyState() {
+    var el = document.getElementById('empty-canvas');
+    if (!el) return;
+    var graphData = lf.getGraphData();
+    var isEmpty = (!graphData.nodes || graphData.nodes.length === 0) && (!graphData.edges || graphData.edges.length === 0);
+    el.style.display = isEmpty ? 'block' : 'none';
+  }
+
   // ========== 加载分组流程图数据 ==========
   function loadGroupFlow(groupId) {
     $.ajax({
@@ -496,13 +505,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         } else {
           lf.render({ nodes: [], edges: [] });
         }
-        setTimeout(function() { lf.resize(); }, 100);
+        setTimeout(function() { lf.resize(); updateEmptyState(); }, 100);
       },
       error: function () {
         lf.render({ nodes: [], edges: [] });
+        setTimeout(updateEmptyState, 100);
       }
     });
-    setTimeout(function() { lf.resize(); }, 100);
+    setTimeout(function() { lf.resize(); updateEmptyState(); }, 100);
     clearPanel();
   }
 
@@ -1035,7 +1045,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       '</div>';
     form.render();
     document.getElementById('btn-clear').onclick = function () {
-      layer.confirm('确定要清空整个画布吗？', { icon: 3 }, function (i) { lf.clearData(); clearPanel(); layer.close(i); });
+      layer.confirm('确定要清空整个画布吗？', { icon: 3 }, function (i) { lf.clearData(); clearPanel(); updateEmptyState(); layer.close(i); });
     };
   }
 
@@ -1072,8 +1082,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   });
   lf.on('edge:click', function (arg) { if (currentMode === 'design') renderEdgePanel(arg.data); });
   lf.on('blank:click', function () { if (currentMode === 'design') renderBlankPanel(); });
-  lf.on('node:delete', clearPanel);
-  lf.on('edge:delete', clearPanel);
+  lf.on('node:delete', function () { clearPanel(); updateEmptyState(); });
+  lf.on('edge:delete', function () { clearPanel(); updateEmptyState(); });
 
   // 点击节点文字时也显示属性面板（文字层可能拦截了 node:click 事件）
   var graphContainer = document.getElementById('graph');

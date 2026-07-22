@@ -251,6 +251,12 @@
             </button>
         </div>
         <div id="graph" style="width:100%;height:100%;flex:1;min-height:0;"></div>
+        <!-- 空画布提示 -->
+        <div id="empty-canvas" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:5;">
+            <i class="layui-icon layui-icon-set" style="font-size:48px;color:#d9d9d9;display:block;margin-bottom:12px;"></i>
+            <div style="font-size:14px;color:#999;margin-bottom:4px;">画布无内容</div>
+            <div style="font-size:13px;color:#bbb;">请在设置页面配置</div>
+        </div>
     </div>
 
     <!-- 右侧属性面板（设计模式） -->
