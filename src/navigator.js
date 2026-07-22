@@ -850,7 +850,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><select name="fontSize" lay-filter="fontSize"><option value="12"' + (curFontSize == 12 ? ' selected' : '') + '>12px</option><option value="14"' + (curFontSize == 14 ? ' selected' : '') + '>14px</option><option value="16"' + (curFontSize == 16 ? ' selected' : '') + '>16px</option><option value="18"' + (curFontSize == 18 ? ' selected' : '') + '>18px</option><option value="20"' + (curFontSize == 20 ? ' selected' : '') + '>20px</option><option value="24"' + (curFontSize == 24 ? ' selected' : '') + '>24px</option></select></div></div>' +
         '</div>' +
         '<div class="props-actions">' +
-          '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
           '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除节点</button>' +
         '</div></form>';
     form.render('select');
@@ -876,6 +875,31 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (textInput) {
       textInput.addEventListener('input', function () {
         lf.updateText(data.id, this.value);
+      });
+    }
+    // 模块选择实时同步
+    form.on('select(module)', function (obj) {
+      var $opt = $(obj.elem).find('option:selected');
+      var moduleInfo = {
+        Id: parseInt(obj.value) || 0,
+        Flag: parseInt($opt.attr('data-flag')) || 0,
+        SectionId: parseInt($opt.attr('data-sectionid')) || 0,
+        Name: $opt.attr('data-name') || ''
+      };
+      lf.setProperties(data.id, { moduleInfo: moduleInfo });
+    });
+    // 负责人实时同步
+    var ownerInput = document.querySelector('input[name="owner"]');
+    if (ownerInput) {
+      ownerInput.addEventListener('input', function () {
+        lf.setProperties(data.id, { owner: this.value });
+      });
+    }
+    // 描述实时同步
+    var descArea = document.querySelector('textarea[name="desc"]');
+    if (descArea) {
+      descArea.addEventListener('input', function () {
+        lf.setProperties(data.id, { desc: this.value });
       });
     }
   }
@@ -915,7 +939,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             '<option value="5,5"' + (props.strokeDasharray === '5,5' ? ' selected' : '') + '>虚线</option></select></div></div>' +
         '</div>' +
         '<div class="props-actions">' +
-          '<button type="submit" class="layui-btn" lay-submit lay-filter="saveProps">保存修改</button>' +
           '<button type="button" class="layui-btn layui-btn-danger" id="btn-delete">删除连线</button>' +
         '</div></form>';
     form.render();
@@ -930,6 +953,41 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         lf.updateText(data.id, this.value);
       });
     }
+    // 文本位置实时同步
+    form.on('select(textPosition)', function (obj) {
+      var pos = obj.value;
+      lf.setProperties(data.id, { textPosition: pos });
+      var eModel = lf.graphModel.getEdgeModelById(data.id);
+      if (eModel && eModel.text) {
+        var sp = eModel.startPoint, ep = eModel.endPoint;
+        var ratio = pos === 'start' ? 0.15 : pos === 'end' ? 0.85 : 0.5;
+        eModel.text = { value: eModel.text.value, x: sp.x + (ep.x - sp.x) * ratio, y: sp.y + (ep.y - sp.y) * ratio };
+      }
+    });
+    // 线条类型实时切换
+    form.on('select(edgeType)', function (obj) {
+      var newType = obj.value;
+      var curModel = lf.graphModel.getEdgeModelById(data.id);
+      if (curModel && curModel.type !== newType) {
+        var oldData = curModel.getData();
+        lf.deleteEdge(data.id);
+        lf.addEdge({
+          id: oldData.id, type: newType,
+          sourceNodeId: oldData.sourceNodeId, targetNodeId: oldData.targetNodeId,
+          sourceAnchorId: oldData.sourceAnchorId, targetAnchorId: oldData.targetAnchorId,
+          text: oldData.text, properties: oldData.properties || {},
+        });
+        lf.selectElementById(data.id, true);
+      }
+    });
+    // 线条粗细实时同步
+    form.on('select(strokeWidth)', function (obj) {
+      lf.setProperties(data.id, { strokeWidth: parseInt(obj.value) });
+    });
+    // 线条样式实时同步
+    form.on('select(strokeDasharray)', function (obj) {
+      lf.setProperties(data.id, { strokeDasharray: obj.value });
+    });
   }
 
   function renderBlankPanel() {
