@@ -1279,31 +1279,33 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // ========== 角色选择树（layui tree） ==========
   var _selectedRoleId = '0'; // 默认全部
-  var _roleTreeRendered = false;
+  var _roleTreeLoaded = false; // layui tree模块是否已加载
+  var _roleTreeRendered = false; // 树是否已渲染
 
-  function loadAndRenderRoleTree() {
+  function loadAndRenderRoleTree(callback) {
     $.ajax({
       type: 'GET', url: '/OA/Ashx/OA_TodoCenter.ashx?act=roleTree',
       success: function (retData) {
         try {
           var treeData = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+          console.log('[Navigator] 角色树数据:', treeData);
           // 转换为 layui tree 数据格式
           var layuiData = [];
           if (treeData.children && treeData.children.length > 0) {
             for (var i = 0; i < treeData.children.length; i++) {
               var child = treeData.children[i];
               layuiData.push({
-                id: child.id,
+                id: String(child.id),
                 title: child.text,
                 spread: true
               });
             }
           }
+          console.log('[Navigator] layui tree数据:', layuiData);
           // 使用 layui tree 渲染
           layui.use(['tree'], function () {
+            _roleTreeLoaded = true;
             var tree = layui.tree;
-            if (_roleTreeRendered) return;
-            _roleTreeRendered = true;
             tree.render({
               elem: '#role-tree',
               data: layuiData,
@@ -1317,10 +1319,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                 if (dropdown) dropdown.style.display = 'none';
               }
             });
+            _roleTreeRendered = true;
+            console.log('[Navigator] 角色树渲染完成');
+            if (callback) callback();
           });
         } catch (e) { console.error('[Navigator] 角色树解析失败:', e); }
       },
-      error: function () { console.warn('[Navigator] 角色树加载失败'); }
+      error: function (xhr, status, err) { console.warn('[Navigator] 角色树加载失败:', status, err); }
     });
   }
 
@@ -1332,8 +1337,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var dropdown = document.getElementById('role-dropdown');
       if (!dropdown) return;
       if (dropdown.style.display === 'none') {
-        if (!_roleTreeRendered) loadAndRenderRoleTree();
-        dropdown.style.display = 'block';
+        if (!_roleTreeLoaded) {
+          // 首次加载，等渲染完成再显示
+          loadAndRenderRoleTree(function () {
+            dropdown.style.display = 'block';
+          });
+        } else {
+          dropdown.style.display = 'block';
+        }
       } else {
         dropdown.style.display = 'none';
       }
@@ -1347,8 +1358,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       if (dropdown) dropdown.style.display = 'none';
     }
   });
-  // 初始加载角色树
-  loadAndRenderRoleTree();
 
   // 保存
   var ctbSave = document.getElementById('ctb-save');
