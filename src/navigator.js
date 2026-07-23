@@ -618,7 +618,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // 分组项 HTML 模板
   function buildGroupItemHtml(groupId, groupName) {
     return '<div class="nav-group-item" data-id="' + groupId + '">' +
-      '<span class="nav-group-drag" title="拖动排序"><i class="layui-icon layui-icon-spread-left"></i></span>' +
+      '<span class="nav-group-drag" title="拖动排序"><span class="nav-dot-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></span>' +
       '<input type="text" class="nav-group-input layui-input" ModuleGroupId="' + groupId + '" value="' + groupName + '" placeholder="请输入分组名">' +
       '<span class="nav-group-delete" title="删除分组"><i class="layui-icon layui-icon-delete"></i></span>' +
       '</div>';
@@ -637,6 +637,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     '.nav-group-drag { cursor: grab; color: #bbb; font-size: 16px; display: flex; align-items: center; flex-shrink: 0; user-select: none; }' +
     '.nav-group-drag:hover { color: #1e9fff; }' +
     '.nav-group-drag:active { cursor: grabbing; }' +
+    '.nav-group-drag .nav-dot-grid { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 2px; width: 8px; height: 12px; }' +
+    '.nav-group-drag .nav-dot-grid i { width: 3px; height: 3px; border-radius: 50%; background: #bbb; display: block; }' +
+    '.nav-group-drag:hover .nav-dot-grid i { background: #1e9fff; }' +
     '.nav-group-input { flex: 1; border: none !important; background: transparent !important; font-size: 13px; padding: 4px 6px !important; min-width: 0; }' +
     '.nav-group-input:focus { outline: none; background: #fff !important; border: 1px solid #1e9fff !important; border-radius: 4px; }' +
     '.nav-group-delete { cursor: pointer; color: #ccc; font-size: 18px; display: flex; align-items: center; flex-shrink: 0; transition: color 0.2s; }' +
