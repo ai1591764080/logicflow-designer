@@ -141,6 +141,7 @@
         .role-checkbox-item input[type="checkbox"] { margin: 0; cursor: pointer; accent-color: #1890ff; }
         .role-checkbox-item span { user-select: none; }
         .role-placeholder { color: #bbb; }
+        #role-label { display: inline-block; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
         .role-select-all { font-weight: 600; border-bottom: none; }
         .role-divider { height: 1px; background: #f0f0f0; margin: 4px 12px; }
 
@@ -197,7 +198,7 @@
     </select>
     <div class="top-bar-actions">
         <div class="role-selector" id="role-selector">
-            <button class="btn-action" id="btn-role-select" title="选择角色" style="min-width:auto;width:96px;"><i class="layui-icon layui-icon-user" style="margin-right:4px;"></i><span id="role-label" class="role-placeholder">请选择</span><i class="layui-icon layui-icon-down" style="margin-left:4px;font-size:12px;"></i></button>
+            <button class="btn-action" id="btn-role-select" title="选择角色" style="white-space:nowrap;"><i class="layui-icon layui-icon-user" style="margin-right:4px;"></i><span id="role-label" class="role-placeholder">请选择</span><i class="layui-icon layui-icon-down" style="margin-left:4px;font-size:12px;"></i></button>
             <div class="role-dropdown" id="role-dropdown" style="display:none;">
                 <div id="role-tree"></div>
             </div>
