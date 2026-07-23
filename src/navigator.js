@@ -305,6 +305,27 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     clearPanel();
   });
 
+  // 方向键微调选中节点位置（每次移动一个网格 = 10px）
+  var ARROW_STEP = 10;
+  function moveSelectedByArrow(dx, dy) {
+    if (currentMode !== 'design') return;
+    var selected = lf.getSelectElements(true);
+    if (!selected.nodes || selected.nodes.length === 0) return;
+    var nodeIds = selected.nodes.map(function (n) { return n.id; });
+    lf.graphModel.moveNodes(nodeIds, dx, dy);
+    // 更新属性面板中的坐标显示
+    if (selected.nodes.length === 1 && currentElementId === selected.nodes[0].id) {
+      var xInput = document.querySelector('input[name="nodeX"]');
+      var yInput = document.querySelector('input[name="nodeY"]');
+      if (xInput) xInput.value = Math.round(selected.nodes[0].x + dx);
+      if (yInput) yInput.value = Math.round(selected.nodes[0].y + dy);
+    }
+  }
+  lf.keyboard.on('up', function () { moveSelectedByArrow(0, -ARROW_STEP); });
+  lf.keyboard.on('down', function () { moveSelectedByArrow(0, ARROW_STEP); });
+  lf.keyboard.on('left', function () { moveSelectedByArrow(-ARROW_STEP, 0); });
+  lf.keyboard.on('right', function () { moveSelectedByArrow(ARROW_STEP, 0); });
+
   // ========== 模块列表（远程加载） ==========
   var _moduleList = [];
   function getModules() {
@@ -1041,6 +1062,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         '<div class="props-help-item"><span>撤销</span><kbd>Ctrl</kbd>+<kbd>Z</kbd></div>' +
         '<div class="props-help-item"><span>重做</span><kbd>Ctrl</kbd>+<kbd>Y</kbd></div>' +
         '<div class="props-help-item"><span>删除选中</span><kbd>Delete</kbd></div>' +
+        '<div class="props-help-item"><span>微调位置</span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></div>' +
         '<div class="props-help-item"><span>编辑文字</span><span style="color:#9ca3af">双击节点/连线</span></div>' +
         '<div class="props-help-btn"><button type="button" class="layui-btn layui-btn-fluid layui-btn-primary layui-btn-sm" id="btn-clear">清空画布</button></div>' +
       '</div>';
