@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/navigator.js src/designer.js --outdir=dist --loader:.css=text",
-    "dev": "esbuild src/navigator.js src/designer.js --outdir=dist --loader:.css=text --watch --servedir=.",
+    "build": "esbuild src/navigator.js src/designer.js src/portal-nav.js --outdir=dist --loader:.css=text",
+    "dev": "esbuild src/navigator.js src/designer.js src/portal-nav.js --outdir=dist --loader:.css=text --watch --servedir=.",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
