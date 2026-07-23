@@ -406,7 +406,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var item = _groupList[i];
       var activeClass = (i === 0) ? ' active' : '';
       treeHtml += '<div class="nav-tree-item' + activeClass + '" data-group-id="' + item.ModuleGroupId + '">';
-      treeHtml += '<i class="layui-icon layui-icon-right"></i>' + item.ModuleGroupName;
+      treeHtml += '<span class="nav-dot-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span>' + item.ModuleGroupName;
       treeHtml += '</div>';
     }
     document.getElementById('nav-tree-list').innerHTML = treeHtml;

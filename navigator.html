@@ -23,6 +23,9 @@
         .nav-tree-item:hover { background: #f0f7ff; color: #1e9fff; }
         .nav-tree-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
         .nav-tree-item i { font-size: 12px; color: #fa8c16; }
+                .nav-dot-grid { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 2px; width: 8px; height: 12px; flex-shrink: 0; }
+                .nav-dot-grid i { width: 3px; height: 3px; border-radius: 50%; background: #bbb; display: block; }
+                .nav-tree-item:hover .nav-dot-grid i, .nav-tree-item.active .nav-dot-grid i { background: #1890ff; }
 
         /* 底部设置分组按钮 */
         .nav-tree-footer { padding: 10px 12px; border-top: 1px solid #f0f2f5; flex-shrink: 0; }
