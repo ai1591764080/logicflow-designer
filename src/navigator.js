@@ -670,6 +670,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   function setGroup() {
     // 先加载角色数据，再打开弹窗
     loadRoles(function () {
+      // 创建临时副本，弹窗内编辑不影响已保存数据
+      _tempGroupRoleMap = JSON.parse(JSON.stringify(_groupRoleMap));
       var html = groupStyle;
       html += "<div class='navigatorGroup'>";
       html += "<div class='navigatorSearch'>";
@@ -692,7 +694,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             var name = $input.val().trim();
             var gid = $input.attr('ModuleGroupId');
             if (name) {
-              var roleIds = _groupRoleMap[gid] || [];
+              var roleIds = _tempGroupRoleMap[gid] || [];
               saveData.push({ ModuleGroupId: gid, ModuleGroupName: name, RoleId: roleIds.join(',') });
             }
           });
@@ -700,7 +702,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           $.ajax({
             type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
             data: { act: 'Save_NavigatorGroupNew', saveData: JSON.stringify(saveData) },
-            success: function () { layer.msg('操作成功', { icon: 1 }); layer.close(index); loadGroupList(); },
+            success: function () {
+              // 保存成功，将临时副本写入正式数据
+              _groupRoleMap = JSON.parse(JSON.stringify(_tempGroupRoleMap));
+              layer.msg('操作成功', { icon: 1 }); layer.close(index); loadGroupList();
+            },
             error: function () { 
               layer.msg('保存失败', { icon: 1 });
               layer.close(index);
@@ -1368,7 +1374,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // ========== 角色数据（分组弹窗内使用） ==========
   var _rolesCache = null; // 缓存角色列表
-  var _groupRoleMap = {}; // 每个分组已选角色 { groupId: [roleId1, roleId2, ...] }
+  var _groupRoleMap = {}; // 每个分组已保存的角色 { groupId: [roleId1, ...] }
+  var _tempGroupRoleMap = {}; // 弹窗内临时编辑副本，保存时才写入 _groupRoleMap
 
   function loadRoles(callback) {
     if (_rolesCache) { if (callback) callback(); return; }
@@ -1389,7 +1396,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
   // 构建角色选择下拉 HTML（用于分组项内）
   function buildRoleSelectorHtml(groupId) {
-    var selectedIds = _groupRoleMap[groupId] || [];
+    var selectedIds = _tempGroupRoleMap[groupId] || [];
     var label = '请选择';
     var placeholderClass = ' g-role-placeholder';
     if (selectedIds.length > 0 && _rolesCache) {
@@ -1407,7 +1414,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // 渲染角色下拉内容（全选+角色列表）
   function renderRoleDropdown($dropdown, groupId) {
     if (!_rolesCache) return;
-    var selectedIds = _groupRoleMap[groupId] || [];
+    var selectedIds = _tempGroupRoleMap[groupId] || [];
     var html = '<label class="g-role-item g-role-all"><input type="checkbox" class="g-cb-all"' + (selectedIds.length === _rolesCache.length && _rolesCache.length > 0 ? ' checked' : '') + '> <span>全选</span></label>' +
       '<div class="g-role-divider"></div>';
     for (var i = 0; i < _rolesCache.length; i++) {
@@ -1426,7 +1433,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       selectedIds.push(String($(this).val()));
       names.push($(this).attr('data-name'));
     });
-    _groupRoleMap[groupId] = selectedIds;
+    _tempGroupRoleMap[groupId] = selectedIds;
     var $btn = $selector.find('.g-role-btn');
     if (selectedIds.length === 0) {
       $btn.text('请选择 ').append('<i class="layui-icon layui-icon-down" style="font-size:10px;margin-left:2px;"></i>');
