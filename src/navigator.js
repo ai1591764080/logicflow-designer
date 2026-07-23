@@ -75,7 +75,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       hover: { r: 8, fill: '#1890ff' }
     },
     // 箭头：清晰可见，且离节点保持距离
-    arrow: { offset: 16, verticalLength: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' }
+    arrow: { offset: 18, verticalLength: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' }
   });
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
