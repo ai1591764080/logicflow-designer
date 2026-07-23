@@ -4,17 +4,315 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>门户导航设置</title>
+    <link rel="stylesheet" href="libs/logicflow-core.css">
     <link rel="stylesheet" href="libs/layui.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        .main-container { flex: 1; display: flex; min-height: 0; }
+
+        /* 左侧面板 */
+        .left-panel { width: 220px; background: #fff; border-right: 1px solid #e6e6e6; display: flex; flex-direction: column; flex-shrink: 0; position: relative; }
+
+        /* 分组树区域 */
+        .nav-tree-section { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .nav-tree-title { font-size: 14px; font-weight: 600; color: #333; padding: 4px 16px 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .nav-tree-title i { font-size: 12px; color: #999; }
+        .nav-tree-list { padding: 0 8px; }
+        .nav-tree-item { padding: 6px 12px 6px 24px; font-size: 13px; color: #555; cursor: pointer; border-radius: 4px; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+        .nav-tree-item:hover { background: #f0f7ff; color: #1e9fff; }
+        .nav-tree-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
+        .nav-tree-item i { font-size: 12px; color: #fa8c16; }
+                .nav-dot-grid { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 2px; width: 8px; height: 12px; flex-shrink: 0; }
+                .nav-dot-grid i { width: 3px; height: 3px; border-radius: 50%; background: #bbb; display: block; }
+                .nav-tree-item:hover .nav-dot-grid i, .nav-tree-item.active .nav-dot-grid i { background: #1890ff; }
+
+
+
+        /* 基础图形区（设计模式） */
+        .shapes-section { padding: 12px; flex: 1; overflow-y: auto; }
+        .shapes-section .shapes-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1e9fff; }
+        .base-shapes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .node-item { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 56px; border: none; border-radius: 4px; cursor: grab; background: transparent; user-select: none; }
+        .node-item:hover .node-text { color: #1e9fff; }
+        .node-item:active { cursor: grabbing; }
+        .base-shapes-grid .node-text { display: none; }
+        .node-shape { width: 32px; height: 32px; }
+        .shape-base-rect { border-radius: 2px; border: 2px solid #666; background: #fff; }
+        .shape-oblong { border-radius: 4px; border: 2px solid #666; background: #fff; width: 42px; height: 20px; }
+        .shape-sharp-rect { border-radius: 0; border: 2px solid #666; background: #fff; width: 44px; height: 20px; }
+        .shape-round-rect { border-radius: 10px; border: 2px solid #666; background: #fff; width: 44px; height: 20px; }
+        .shape-document { width: 40px; height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='29'%3E%3Cpath d='M1 1H41V25C33 21 26 21 21 25C16 29 9 29 1 25Z' fill='%23fff' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center; background-size: 100% 100%; }
+        .shape-subprocess { width: 40px; height: 24px; border: 2px solid #666; background: #fff; position: relative; }
+        .shape-subprocess::before, .shape-subprocess::after { content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: #666; }
+        .shape-subprocess::before { left: 6px; }
+        .shape-subprocess::after { right: 6px; }
+        .shape-internal-storage { width: 40px; height: 24px; border: 2px solid #666; background: #fff; position: relative; }
+                .shape-internal-storage::before, .shape-internal-storage::after { content: ''; position: absolute; background: #666; }
+                .shape-internal-storage::before { top: 6px; left: 0; right: 0; height: 2px; }
+                .shape-internal-storage::after { left: 8px; top: 0; bottom: 0; width: 2px; }
+        .shape-base-circle { border-radius: 50%; border: 2px solid #666; background: #fff; width: 30px; height: 30px; }
+        .shape-base-diamond { width: 24px; height: 24px; transform: rotate(45deg); border: 2px solid #666; background: #fff; margin: 4px auto; }
+
+        /* 中间画布 */
+        .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* 右侧属性面板 */
+        .right-panel { width: 290px; background-color: #ffffff !important; background: #ffffff !important; border-left: 1px solid #e8ecf0; padding: 0; overflow-y: auto; flex-shrink: 0; display: none; }
+        .right-panel.collapsed { width: 0; overflow: hidden; border-left: none; }
+        .right-panel .panel-title { font-size: 14px; color: #1a1a2e; margin: 0; padding: 14px 20px; border-bottom: 1px solid #eef1f5; font-weight: 600; background: #fafbfc !important; position: sticky; top: 0; z-index: 1; }
+        .right-panel #props-content { padding: 0; background: #ffffff !important; min-height: 200px; }
+        .props-section { padding: 12px 14px; border-bottom: 1px solid #f2f4f7; }
+        .props-section:last-child { border-bottom: none; }
+        .props-section-title { font-size: 12px; color: #8c93a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .props-section-title::before { content: ''; display: inline-block; width: 3px; height: 12px; background: #1e9fff; border-radius: 2px; }
+        #props-content .layui-form-item { margin-bottom: 14px; display: flex; align-items: center; }
+        #props-content .layui-form-item:last-child { margin-bottom: 0; }
+        #props-content .layui-form-label { width: 60px; padding: 0; text-align: left; font-size: 13px; color: #5a6170; flex-shrink: 0; line-height: 34px; }
+        #props-content .layui-input-block { margin-left: 68px; flex: 1; min-width: 0; }
+        #props-content .layui-input { height: 34px; line-height: 34px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 0 10px; }
+        #props-content .layui-input:focus { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.1); background: #fff; }
+        #props-content .layui-input[disabled] { background: #f0f2f5; color: #999; }
+        #props-content .layui-textarea { min-height: 64px; border-radius: 6px; border: 1px solid #e0e4ea; font-size: 13px; background: #fafbfc; padding: 8px 10px; resize: vertical; }
+        .props-actions { padding: 16px 20px; background: #fafbfc; border-top: 1px solid #f2f4f7; position: sticky; bottom: 0; }
+        .props-actions .layui-btn { border-radius: 6px; font-size: 13px; height: 36px; }
+
+        .props-actions .layui-btn + .layui-btn { margin-left: 8px; }
+        .color-field { display: flex; align-items: center; gap: 8px; }
+        .color-field .layui-colorpicker { width: 28px; height: 28px; border-radius: 6px; }
+        .color-field .layui-colorpicker .layui-icon-down { display: none; }
+        .empty-tip { color: #b0b8c5; text-align: center; padding: 60px 30px 0; font-size: 13px; line-height: 2; }
+        .empty-tip i { font-size: 48px; color: #dce1e8; display: block; margin-bottom: 16px; }
+
+        /* 快捷操作提示 */
+        .props-help { margin: 16px 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e8ecf0; }
+        .props-help-title { font-size: 13px; color: #5a6170; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .props-help-title::before { content: '\e6c3'; font-family: layui-icon; font-size: 14px; color: #1e9fff; }
+        .props-help-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 12px; color: #6b7280; }
+        .props-help-item + .props-help-item { border-top: 1px dashed #e8ecf0; }
+        .props-help-item span { flex: 1; }
+        .props-help-item kbd { display: inline-block; padding: 2px 6px; font-size: 11px; font-family: Consolas, Monaco, monospace; color: #4a5568; background: #fff; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin: 0 2px; }
+        .props-help-btn { margin-top: 16px; }
+        .props-help-btn .layui-btn { width: 100%; border-radius: 6px; font-size: 13px; height: 36px; }
+
+        /* 折叠按钮 */
+        .toggle-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; width: 16px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #e6e6e6; cursor: pointer; }
+        .toggle-btn:hover { background: #f0f9ff; border-color: #1e9fff; }
+        .toggle-btn i { font-size: 12px; color: #999; }
+        .right-toggle { left: -17px; border-radius: 4px 0 0 4px; border-right: none; }
+
+        /* 画布工具栏（设计模式） */
+        .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: none; align-items: center; gap: 4px; flex-shrink: 0; }
+        .canvas-toolbar .tb-btn { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #e0e4ea; border-radius: 4px; background: #fff; color: #5a6170; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+        .canvas-toolbar .tb-btn:hover { border-color: #1e9fff; color: #1e9fff; background: #f0f7ff; }
+        .canvas-toolbar .tb-btn i { font-size: 14px; }
+        .canvas-toolbar .tb-divider { width: 1px; height: 20px; background: #e8ecf0; margin: 0 4px; }
+        .canvas-toolbar .tb-select { height: 28px; border: 1px solid #e0e4ea; border-radius: 4px; padding: 0 8px; font-size: 12px; color: #5a6170; background: #fff; outline: none; cursor: pointer; }
+        .canvas-toolbar .tb-select:hover { border-color: #1e9fff; }
+        .canvas-toolbar .tb-btn.tb-save { background: #1e9fff; border-color: #1e9fff; color: #fff; margin-left: auto; }
+        .canvas-toolbar .tb-btn.tb-save:hover { background: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export:hover { background: #1890ff; color: #fff; }
+        .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
+        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 44px; width: 100%; height: calc(100vh - 44px); z-index: 100; }
+
+        /* 顶部栏 */
+        .top-bar { height: 44px; background: #fff; border-bottom: 1px solid #e8ecf0; display: flex; align-items: center; padding: 0 16px; flex-shrink: 0; }
+        .top-bar-logo { width: 32px; height: 32px; background: #1890ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+        .top-bar-logo i { color: #fff; font-size: 18px; }
+        .top-bar-title { font-size: 15px; font-weight: 600; color: #333; margin-right: 24px; white-space: nowrap; }
+        .top-bar-select { width: 160px; height: 30px; border: 1px solid #d9d9d9; border-radius: 4px; padding: 0 28px 0 8px; font-size: 13px; color: #333; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E") no-repeat 120px center; outline: none; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+        .top-bar-select:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,0.1); }
+        .top-bar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .top-bar-actions .btn-action { height: 30px; padding: 0 16px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; cursor: pointer; background: #fff; color: #333; transition: all 0.2s; }
+        .top-bar-actions .btn-action:hover { border-color: #1890ff; color: #1890ff; }
+        .top-bar-actions .btn-action.btn-primary { background: #1890ff; border-color: #1890ff; color: #fff; }
+        .top-bar-actions .btn-action.btn-primary:hover { background: #40a9ff; border-color: #40a9ff; color: #fff; }
+
+        /* 画布工具栏（设计模式） */
+        .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: none; align-items: center; gap: 4px; flex-shrink: 0; }
+        .canvas-toolbar .tb-btn { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #e0e4ea; border-radius: 4px; background: #fff; color: #5a6170; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+        .canvas-toolbar .tb-btn:hover { border-color: #1e9fff; color: #1e9fff; background: #f0f7ff; }
+        .canvas-toolbar .tb-btn i { font-size: 14px; }
+        .canvas-toolbar .tb-divider { width: 1px; height: 20px; background: #e8ecf0; margin: 0 4px; }
+        .canvas-toolbar .tb-select { height: 28px; border: 1px solid #e0e4ea; border-radius: 4px; padding: 0 8px; font-size: 12px; color: #5a6170; background: #fff; outline: none; cursor: pointer; }
+        .canvas-toolbar .tb-select:hover { border-color: #1e9fff; }
+        .canvas-toolbar .tb-btn.tb-save { background: #1e9fff; border-color: #1e9fff; color: #fff; margin-left: auto; }
+        .canvas-toolbar .tb-btn.tb-save:hover { background: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
+        .canvas-toolbar .tb-btn.tb-export:hover { background: #1890ff; color: #fff; }
+
+        /* 小地图按钮样式 */
+        #ctb-minimap:hover { border-color: #1e9fff !important; color: #1e9fff !important; background: #f0f7ff !important; box-shadow: 0 4px 16px rgba(30,159,255,0.2) !important; }
+        #ctb-minimap.active { border-color: #1e9fff !important; color: #1e9fff !important; background: #e6f7ff !important; }
+
+        /* 模式控制 */
+        .mode-view .edit-only { display: none !important; }
+        .mode-design .view-only { display: none !important; }
+        .mode-view .lf-grid { display: none !important; }
+        .mode-view .lf-node-selected-outline { display: none !important; }
+        .mode-view .lf-edge-adjust, .mode-view .lf-node-adjust { display: none !important; }
+        .mode-view .lf-anchor { display: none !important; }
+
+        /* 光标样式：节点显示小手，线条显示默认光标 */
+        .lf-node { cursor: pointer; }
+        .lf-edge { cursor: default; }
+
+        /* 框选按钮激活状态 */
+        .canvas-toolbar .tb-btn.tb-active { background: #1e9fff; border-color: #1e9fff; color: #fff; }
+
+        /* 框选矩形样式 */
+        .lf-selection-select { position: absolute; border: 2px dashed #1e9fff; background: rgba(30,159,255,0.08); z-index: 100; pointer-events: none; }
+
+        /* 右键菜单 */
+        #context-menu { display: none; position: absolute; z-index: 9999; background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 0; min-width: 120px; }
+        #context-menu .menu-item { padding: 8px 15px; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; }
+        #context-menu .menu-item:hover { background: #f2f2f2; color: #1e9fff; }
+        #context-menu .menu-item i { margin-right: 8px; font-size: 16px; }
     </style>
 </head>
-<body>
+<body class="mode-view">
+
+<!-- 顶部栏 -->
+<div class="top-bar">
+    <div class="top-bar-logo"><i class="layui-icon layui-icon-template-1"></i></div>
+    <div class="top-bar-title">功能导航</div>
+    <select id="group-select" class="top-bar-select">
+        <!-- 动态加载 -->
+    </select>
+    <div class="top-bar-actions">
+        <button class="btn-action edit-only" id="btn-cancel">取消</button>
+    </div>
+</div>
+
+<!-- 主体布局 -->
+<div class="main-container">
+    <!-- 左侧面板 -->
+    <div class="left-panel" id="left-panel">
+        <!-- 分组树（查看模式） -->
+        <div class="nav-tree-section view-only">
+            <div class="nav-tree-title"><i class="layui-icon layui-icon-triangle-r"></i> 导航分组</div>
+            <div class="nav-tree-list" id="nav-tree-list"></div>
+        </div>
+        <!-- 基础图形（设计模式） -->
+        <div class="shapes-section" style="display:none;">
+            <div class="shapes-title">基础图形</div>
+            <div class="base-shapes-grid">
+                <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div></div>
+                <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div></div>
+                <div class="node-item" draggable="true" data-type="sharp-rect"><div class="node-shape shape-sharp-rect"></div></div>
+                <div class="node-item" draggable="true" data-type="round-rect"><div class="node-shape shape-round-rect"></div></div>
+                <div class="node-item" draggable="true" data-type="document"><div class="node-shape shape-document"></div></div>
+                <div class="node-item" draggable="true" data-type="subprocess"><div class="node-shape shape-subprocess"></div></div>
+                <div class="node-item" draggable="true" data-type="internal-storage"><div class="node-shape shape-internal-storage"></div></div>
+                <div class="node-item" draggable="true" data-type="circle"><div class="node-shape shape-base-circle"></div></div>
+                <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 中间画布区域 -->
+    <div class="center-panel">
+        <!-- 画布工具栏（设计模式） -->
+        <div class="canvas-toolbar" id="canvas-toolbar">
+            <button class="tb-btn" id="ctb-undo" title="撤销"><i class="layui-icon layui-icon-left"></i></button>
+            <button class="tb-btn" id="ctb-redo" title="重做"><i class="layui-icon layui-icon-right"></i></button>
+            <div class="tb-divider"></div>
+            <button class="tb-btn" id="ctb-zoom-in" title="放大"><i class="layui-icon layui-icon-addition"></i></button>
+            <button class="tb-btn" id="ctb-zoom-out" title="缩小"><i class="layui-icon layui-icon-subtraction"></i></button>
+            <button class="tb-btn" id="ctb-fit" title="适应"><i class="layui-icon layui-icon-senior"></i></button>
+            <button class="tb-btn" id="ctb-reset" title="重置"><i class="layui-icon layui-icon-refresh"></i></button>
+            <div class="tb-divider"></div>
+            <button class="tb-btn" id="ctb-select" title="框选"><i class="layui-icon layui-icon-slider"></i></button>
+            <select class="tb-select" id="ctb-edge-type">
+                <option value="custom-bezier">曲线</option>
+                <option value="custom-polyline">折线</option>
+                <option value="custom-line">直线</option>
+            </select>
+            <div class="tb-divider"></div>
+            <button class="tb-btn tb-export" id="ctb-snapshot" title="导出图片"><i class="layui-icon layui-icon-picture"></i> 图片</button>
+            <button class="tb-btn tb-export" id="ctb-export" title="导出JSON"><i class="layui-icon layui-icon-export"></i> JSON</button>
+            <button class="tb-btn tb-save" id="ctb-save"><i class="layui-icon layui-icon-ok"></i> 保存</button>
+        </div>
+        <!-- 小地图按钮（始终可见） -->
+        <div style="position:absolute;bottom:16px;right:310px;z-index:10;">
+            <button class="tb-btn" id="ctb-minimap" style="box-shadow:0 2px 12px rgba(0,0,0,0.12);background:#fff;border:1px solid #e8ecf0;border-radius:8px;height:36px;padding:0 14px;font-size:13px;color:#5a6170;display:flex;align-items:center;gap:6px;transition:all 0.2s;">
+                <i class="layui-icon layui-icon-map" style="font-size:16px;"></i>
+                <span>小地图</span>
+            </button>
+        </div>
+        <div id="graph" style="width:100%;height:100%;flex:1;min-height:0;"></div>
+        <!-- 空画布提示 -->
+        <div id="empty-canvas" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:5;">
+            <i class="layui-icon layui-icon-set" style="font-size:48px;color:#d9d9d9;display:block;margin-bottom:12px;"></i>
+            <div style="font-size:14px;color:#999;margin-bottom:4px;">画布无内容</div>
+            <div style="font-size:13px;color:#bbb;">请在设置页面配置</div>
+        </div>
+    </div>
+
+    <!-- 右侧属性面板（设计模式） -->
+    <div class="right-panel" id="right-panel" style="background:#fff;min-height:100%;">
+        <div class="panel-title">属性配置</div>
+        <div id="props-content">
+            <div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>
+        </div>
+        <button id="toggle-right" class="toggle-btn right-toggle"><i class="layui-icon layui-icon-right"></i></button>
+    </div>
+</div>
+
+<!-- 右键菜单 -->
+<div id="context-menu">
+    <div class="menu-item" id="menu-edit"><i class="layui-icon layui-icon-edit"></i> 编辑属性</div>
+    <div class="menu-item" id="menu-delete"><i class="layui-icon layui-icon-delete"></i> 删除</div>
+</div>
 
 <script src="libs/jquery.min.js"></script>
 <script src="libs/jquery-ui.min.js"></script>
 <script src="libs/layui.js"></script>
-<script src="dist/portal-nav.js"></script>
+<script src="libs/logicflow-core.min.js"></script>
+<link rel="stylesheet" href="libs/logicflow-extension.css">
+<script src="libs/logicflow-extension.min.js"></script>
+<script src="libs/html2canvas.min.js"></script>
+
+<script>
+  var LFConstructor = Core.default || Core.LogicFlow;
+  window.LogicFlow = LFConstructor;
+  var _keys = ['CircleNode','CircleNodeModel','RectNode','RectNodeModel','DiamondNode','DiamondNodeModel','LineEdge','LineEdgeModel','PolylineEdge','PolylineEdgeModel','BezierEdge','BezierEdgeModel'];
+  for (var i = 0; i < _keys.length; i++) {
+    if (Core[_keys[i]]) window.LogicFlow[_keys[i]] = Core[_keys[i]];
+  }
+  window.h = Core.h;
+  // 调试：检查 Extension 插件加载状态
+  console.log('[CDN] Core:', typeof Core, '| Extension:', typeof window.Extension);
+  if (window.Extension) {
+    console.log('[CDN] Extension keys:', Object.keys(window.Extension));
+  }
+  // 注册 Extension 插件
+  if (window.Extension && window.Extension.MiniMap) {
+    console.log('[CDN] MiniMap 插件已找到，注册中...');
+    window.LogicFlow.MiniMap = window.Extension.MiniMap;
+    // 全局注册（LogicFlow 2.x 静态方法）
+    if (typeof window.LogicFlow.use === 'function') {
+      window.LogicFlow.use(window.Extension.MiniMap);
+      console.log('[CDN] MiniMap 全局注册成功');
+    }
+  } else {
+    console.warn('[CDN] MiniMap 插件未找到！Extension:', window.Extension);
+  }
+  // 注册 SelectionSelect 框选插件
+  if (window.Extension && window.Extension.SelectionSelect) {
+    window.LogicFlow.SelectionSelect = window.Extension.SelectionSelect;
+    if (typeof window.LogicFlow.use === 'function') {
+      window.LogicFlow.use(window.Extension.SelectionSelect);
+      console.log('[CDN] SelectionSelect 全局注册成功');
+    }
+  } else {
+    console.warn('[CDN] SelectionSelect 插件未找到！');
+  }
+</script>
+
+<script src="dist/navigator.js"></script>
+
 </body>
 </html>
