@@ -1359,9 +1359,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var label = document.getElementById('role-label');
     if (label) {
       if (_selectedRoleIds.length === 0) {
-        label.textContent = '全部';
+        label.textContent = '请选择';
+        label.classList.add('role-placeholder');
       } else {
         label.textContent = names.join('、');
+        label.classList.remove('role-placeholder');
         // 文字过长时截断
         if (label.textContent.length > 10) label.textContent = label.textContent.substring(0, 10) + '...';
       }
