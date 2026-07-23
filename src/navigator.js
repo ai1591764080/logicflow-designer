@@ -1315,7 +1315,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           if (Array.isArray(treeData) && treeData.length > 0) treeData = treeData[0];
           console.log('[Navigator] 角色树数据:', treeData);
           var roles = (treeData && treeData.children) ? treeData.children : [];
-          var html = '';
+          var html = '<label class="role-checkbox-item role-select-all">' +
+            '<input type="checkbox" class="role-cb-all" id="role-cb-all">' +
+            '<span>全选</span></label>' +
+            '<div class="role-divider"></div>';
           for (var i = 0; i < roles.length; i++) {
             var r = roles[i];
             html += '<label class="role-checkbox-item">' +
@@ -1324,8 +1327,17 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           }
           var container = document.getElementById('role-tree');
           if (container) container.innerHTML = html;
-          // 绑定change事件
+          // 全选change事件
+          $(container).off('change', '.role-cb-all').on('change', '.role-cb-all', function () {
+            var checked = this.checked;
+            $(container).find('.role-cb').prop('checked', checked);
+            updateSelectedRoles();
+          });
+          // 单个change事件
           $(container).off('change', '.role-cb').on('change', '.role-cb', function () {
+            var allCbs = $(container).find('.role-cb');
+            var checkedCbs = allCbs.filter(':checked');
+            $('#role-cb-all').prop('checked', allCbs.length > 0 && checkedCbs.length === allCbs.length);
             updateSelectedRoles();
           });
           _roleDataLoaded = true;
