@@ -400,6 +400,15 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   function loadGroupList() {
     _groupList = getGroupList();
 
+    // 从分组数据中提取角色信息写入 _groupRoleMap
+    for (var g = 0; g < _groupList.length; g++) {
+      var item = _groupList[g];
+      var gid = String(item.ModuleGroupId);
+      if (item.RoleId !== undefined && item.RoleId !== null && item.RoleId !== '') {
+        _groupRoleMap[gid] = String(item.RoleId).split(',').filter(function (v) { return v !== ''; });
+      }
+    }
+
     // 渲染左侧树列表
     var treeHtml = '';
     for (var i = 0; i < _groupList.length; i++) {
