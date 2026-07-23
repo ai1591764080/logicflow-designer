@@ -1313,6 +1313,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       success: function (retData) {
         try {
           var treeData = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+          // 接口返回的是数组，取第一个元素
+          if (Array.isArray(treeData) && treeData.length > 0) treeData = treeData[0];
           console.log('[Navigator] 角色树数据:', treeData);
           // 转换为 layui tree 数据格式
           var layuiData = [];
