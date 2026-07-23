@@ -620,6 +620,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     return '<div class="nav-group-item" data-id="' + groupId + '">' +
       '<span class="nav-group-drag" title="拖动排序"><span class="nav-dot-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></span>' +
       '<input type="text" class="nav-group-input layui-input" ModuleGroupId="' + groupId + '" value="' + groupName + '" placeholder="请输入分组名">' +
+      buildRoleSelectorHtml(groupId) +
       '<span class="nav-group-delete" title="删除分组"><i class="layui-icon layui-icon-delete"></i></span>' +
       '</div>';
   }
@@ -644,97 +645,151 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     '.nav-group-input:focus { outline: none; background: #fff !important; border: 1px solid #1e9fff !important; border-radius: 4px; }' +
     '.nav-group-delete { cursor: pointer; color: #ccc; font-size: 18px; display: flex; align-items: center; flex-shrink: 0; transition: color 0.2s; }' +
     '.nav-group-delete:hover { color: #ff4d4f; }' +
+    // 角色选择器样式
+    '.g-role-selector { position: relative; flex-shrink: 0; }' +
+    '.g-role-btn { display: inline-block; max-width: 100px; padding: 2px 6px; border: 1px solid #d9d9d9; border-radius: 3px; font-size: 12px; color: #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; background: #fff; transition: border-color 0.2s; }' +
+    '.g-role-btn:hover { border-color: #1e9fff; }' +
+    '.g-role-placeholder { color: #bbb; }' +
+    '.g-role-dropdown { position: absolute; top: 100%; left: 0; margin-top: 4px; background: #fff; border: 1px solid #e8ecf0; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 9999; min-width: 150px; max-height: 250px; overflow-y: auto; padding: 4px 0; }' +
+    '.g-role-item { display: flex; align-items: center; gap: 6px; padding: 5px 12px; cursor: pointer; font-size: 12px; color: #333; transition: background 0.15s; margin: 0; }' +
+    '.g-role-item:hover { background: #f0f7ff; }' +
+    '.g-role-item input[type="checkbox"] { margin: 0; cursor: pointer; accent-color: #1890ff; }' +
+    '.g-role-all { font-weight: 600; }' +
+    '.g-role-divider { height: 1px; background: #f0f0f0; margin: 3px 10px; }' +
     '</style>';
 
   function setGroup() {
-    var html = groupStyle;
-    html += "<div class='navigatorGroup'>";
-    html += "<div class='navigatorSearch'>";
-    html += '<input type="text" id="navigatorInput" class="layui-input" maxlength="120" autocomplete="off" placeholder="请输入新分组名称">';
-    html += '<input type="button" id="navigatorAdd" class="layui-btn layui-btn-sm layui-btn-normal" value="添加">';
-    html += '</div>';
-    html += "<div class='navigatorBody'>";
-    for (var i = 0; i < _groupList.length; i++) {
-      html += buildGroupItemHtml(_groupList[i].ModuleGroupId, _groupList[i].ModuleGroupName);
-    }
-    html += '</div></div>';
-
-    layer.open({
-      type: 1, title: '设置分组', content: html, area: ['400px', '520px'], btn: ['保存', '取消'],
-      yes: function (index) {
-        var saveData = [];
-        var $navigatorGroup = $('.navigatorGroup');
-        $navigatorGroup.find('.navigatorBody .nav-group-item').each(function () {
-          var $input = $(this).find('.nav-group-input');
-          var name = $input.val().trim();
-          if (name) saveData.push({ ModuleGroupId: $input.attr('ModuleGroupId'), ModuleGroupName: name });
-        });
-        if (saveData.length === 0) { layer.msg('至少保留一个分组', { icon: 2 }); return; }
-        $.ajax({
-          type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-          data: { act: 'Save_NavigatorGroupNew', saveData: JSON.stringify(saveData) },
-          success: function () { layer.msg('操作成功', { icon: 1 }); layer.close(index); loadGroupList(); },
-          error: function () { 
-            layer.msg('保存失败', { icon: 1 });
-            layer.close(index);
-            loadGroupList();
-          }
-        });
-      },
-      success: function (layero) {
-        var $navigatorGroup = $(layero).find('.navigatorGroup');
-        var $navigatorInput = $navigatorGroup.find('#navigatorInput');
-        var $navigatorAdd = $navigatorGroup.find('#navigatorAdd');
-        var $navigatorBody = $navigatorGroup.find('.navigatorBody');
-
-        // 添加新分组
-        $navigatorAdd.on('click', function () {
-          var val = $navigatorInput.val().trim();
-          if (!val) { layer.msg('请输入分组名称', { icon: 0 }); return; }
-          var idList = [];
-          $navigatorGroup.find('.nav-group-input').each(function () {
-            var oId = parseInt($(this).attr('ModuleGroupId'));
-            if (!isNaN(oId) && oId !== 0) idList.push(oId);
-          });
-          idList.sort(function (a, b) { return a - b; });
-          var nId = idList.pop();
-          if (nId === undefined) nId = 1; else nId = nId + 1;
-          $navigatorBody.append(buildGroupItemHtml(nId, val));
-          $navigatorInput.val('');
-          // 滚动到底部
-          $navigatorBody.scrollTop($navigatorBody[0].scrollHeight);
-        });
-
-        // 回车添加
-        $navigatorInput.on('keydown', function (e) {
-          if (e.keyCode === 13) $navigatorAdd.click();
-        });
-
-        // 删除分组（带确认弹窗）
-        $navigatorBody.on('click', '.nav-group-delete', function () {
-          var $item = $(this).closest('.nav-group-item');
-          var name = $item.find('.nav-group-input').val() || '该分组';
-          layer.confirm('删除将同时删除当前组导数据，确定删除该分组【' + name + '】吗？', { icon: 3, title: '删除确认' }, function (index) {
-            layer.close(index);
-            $item.slideUp(200, function () { $item.remove(); });
-          });
-        });
-
-        // 拖拽排序
-        $navigatorBody.sortable({
-          items: '> .nav-group-item',
-          handle: '.nav-group-drag',
-          opacity: 0.9,
-          distance: 3,
-          cursor: 'grabbing',
-          tolerance: 10,
-          placeholder: 'ui-sortable-placeholder',
-          start: function (event, ui) {
-            ui.placeholder.height(ui.item.outerHeight() - 7);
-          },
-          stop: function () {}
-        });
+    // 先加载角色数据，再打开弹窗
+    loadRoles(function () {
+      var html = groupStyle;
+      html += "<div class='navigatorGroup'>";
+      html += "<div class='navigatorSearch'>";
+      html += '<input type="text" id="navigatorInput" class="layui-input" maxlength="120" autocomplete="off" placeholder="请输入新分组名称">';
+      html += '<input type="button" id="navigatorAdd" class="layui-btn layui-btn-sm layui-btn-normal" value="添加">';
+      html += '</div>';
+      html += "<div class='navigatorBody'>";
+      for (var i = 0; i < _groupList.length; i++) {
+        html += buildGroupItemHtml(_groupList[i].ModuleGroupId, _groupList[i].ModuleGroupName);
       }
+      html += '</div></div>';
+
+      layer.open({
+        type: 1, title: '设置分组', content: html, area: ['450px', '520px'], btn: ['保存', '取消'],
+        yes: function (index) {
+          var saveData = [];
+          var $navigatorGroup = $('.navigatorGroup');
+          $navigatorGroup.find('.navigatorBody .nav-group-item').each(function () {
+            var $input = $(this).find('.nav-group-input');
+            var name = $input.val().trim();
+            var gid = $input.attr('ModuleGroupId');
+            if (name) {
+              var roleIds = _groupRoleMap[gid] || [];
+              saveData.push({ ModuleGroupId: gid, ModuleGroupName: name, RoleId: roleIds.join(',') });
+            }
+          });
+          if (saveData.length === 0) { layer.msg('至少保留一个分组', { icon: 2 }); return; }
+          $.ajax({
+            type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
+            data: { act: 'Save_NavigatorGroupNew', saveData: JSON.stringify(saveData) },
+            success: function () { layer.msg('操作成功', { icon: 1 }); layer.close(index); loadGroupList(); },
+            error: function () { 
+              layer.msg('保存失败', { icon: 1 });
+              layer.close(index);
+              loadGroupList();
+            }
+          });
+        },
+        success: function (layero) {
+          var $navigatorGroup = $(layero).find('.navigatorGroup');
+          var $navigatorInput = $navigatorGroup.find('#navigatorInput');
+          var $navigatorAdd = $navigatorGroup.find('#navigatorAdd');
+          var $navigatorBody = $navigatorGroup.find('.navigatorBody');
+
+          // 角色按钮点击展开/收起
+          $navigatorBody.on('click', '.g-role-btn', function (e) {
+            e.stopPropagation();
+            var $selector = $(this).closest('.g-role-selector');
+            var $dd = $selector.find('.g-role-dropdown');
+            var groupId = $selector.attr('data-group-id');
+            if ($dd.is(':visible')) {
+              $dd.hide();
+            } else {
+              // 关闭其他已打开的下拉
+              $navigatorBody.find('.g-role-dropdown').hide();
+              renderRoleDropdown($dd, groupId);
+              $dd.show();
+            }
+          });
+          // 全选
+          $navigatorBody.on('change', '.g-cb-all', function () {
+            var $selector = $(this).closest('.g-role-selector');
+            var groupId = $selector.attr('data-group-id');
+            var checked = this.checked;
+            $selector.find('.g-cb').prop('checked', checked);
+            updateGroupRoleLabel($selector, groupId);
+          });
+          // 单个勾选
+          $navigatorBody.on('change', '.g-cb', function () {
+            var $selector = $(this).closest('.g-role-selector');
+            var groupId = $selector.attr('data-group-id');
+            var allCbs = $selector.find('.g-cb');
+            var checkedCbs = allCbs.filter(':checked');
+            $selector.find('.g-cb-all').prop('checked', allCbs.length > 0 && checkedCbs.length === allCbs.length);
+            updateGroupRoleLabel($selector, groupId);
+          });
+          // 点击外部关闭角色下拉
+          $(document).off('click.groupRole').on('click.groupRole', function () {
+            $navigatorBody.find('.g-role-dropdown').hide();
+          });
+
+          // 添加新分组
+          $navigatorAdd.on('click', function () {
+            var val = $navigatorInput.val().trim();
+            if (!val) { layer.msg('请输入分组名称', { icon: 0 }); return; }
+            var idList = [];
+            $navigatorGroup.find('.nav-group-input').each(function () {
+              var oId = parseInt($(this).attr('ModuleGroupId'));
+              if (!isNaN(oId) && oId !== 0) idList.push(oId);
+            });
+            idList.sort(function (a, b) { return a - b; });
+            var nId = idList.pop();
+            if (nId === undefined) nId = 1; else nId = nId + 1;
+            $navigatorBody.append(buildGroupItemHtml(nId, val));
+            $navigatorInput.val('');
+            $navigatorBody.scrollTop($navigatorBody[0].scrollHeight);
+          });
+
+          // 回车添加
+          $navigatorInput.on('keydown', function (e) {
+            if (e.keyCode === 13) $navigatorAdd.click();
+          });
+
+          // 删除分组（带确认弹窗）
+          $navigatorBody.on('click', '.nav-group-delete', function () {
+            var $item = $(this).closest('.nav-group-item');
+            var name = $item.find('.nav-group-input').val() || '该分组';
+            layer.confirm('删除将同时删除当前组导数据，确定删除该分组【' + name + '】吗？', { icon: 3, title: '删除确认' }, function (index) {
+              layer.close(index);
+              $item.slideUp(200, function () { $item.remove(); });
+            });
+          });
+
+          // 拖拽排序
+          $navigatorBody.sortable({
+            items: '> .nav-group-item',
+            handle: '.nav-group-drag',
+            opacity: 0.9,
+            distance: 3,
+            cursor: 'grabbing',
+            tolerance: 10,
+            placeholder: 'ui-sortable-placeholder',
+            start: function (event, ui) {
+              ui.placeholder.height(ui.item.outerHeight() - 7);
+            },
+            stop: function () {}
+          });
+        }
+      });
     });
   }
 
@@ -1302,102 +1357,78 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
   };
 
-  // ========== 角色多选下拉框 ==========
-  var _selectedRoleIds = []; // 已选角色ID数组
-  var _roleDataLoaded = false; // 是否已加载
+  // ========== 角色数据（分组弹窗内使用） ==========
+  var _rolesCache = null; // 缓存角色列表
+  var _groupRoleMap = {}; // 每个分组已选角色 { groupId: [roleId1, roleId2, ...] }
 
-  function loadAndRenderRoles(callback) {
+  function loadRoles(callback) {
+    if (_rolesCache) { if (callback) callback(); return; }
     $.ajax({
       type: 'GET', url: '/OA/Ashx/OA_TodoCenter.ashx?act=roleTree',
       success: function (retData) {
         try {
           var treeData = (typeof retData === 'string') ? JSON.parse(retData) : retData;
           if (Array.isArray(treeData) && treeData.length > 0) treeData = treeData[0];
-          console.log('[Navigator] 角色树数据:', treeData);
-          var roles = (treeData && treeData.children) ? treeData.children : [];
-          var html = '<label class="role-checkbox-item role-select-all">' +
-            '<input type="checkbox" class="role-cb-all" id="role-cb-all">' +
-            '<span>全选</span></label>' +
-            '<div class="role-divider"></div>';
-          for (var i = 0; i < roles.length; i++) {
-            var r = roles[i];
-            html += '<label class="role-checkbox-item">' +
-              '<input type="checkbox" class="role-cb" value="' + r.id + '" data-name="' + r.text + '">' +
-              '<span>' + r.text + '</span></label>';
-          }
-          var container = document.getElementById('role-tree');
-          if (container) container.innerHTML = html;
-          // 全选change事件
-          $(container).off('change', '.role-cb-all').on('change', '.role-cb-all', function () {
-            var checked = this.checked;
-            $(container).find('.role-cb').prop('checked', checked);
-            updateSelectedRoles();
-          });
-          // 单个change事件
-          $(container).off('change', '.role-cb').on('change', '.role-cb', function () {
-            var allCbs = $(container).find('.role-cb');
-            var checkedCbs = allCbs.filter(':checked');
-            $('#role-cb-all').prop('checked', allCbs.length > 0 && checkedCbs.length === allCbs.length);
-            updateSelectedRoles();
-          });
-          _roleDataLoaded = true;
-          console.log('[Navigator] 角色列表渲染完成，共', roles.length, '项');
+          _rolesCache = (treeData && treeData.children) ? treeData.children : [];
+          console.log('[Navigator] 角色加载成功，共', _rolesCache.length, '项');
           if (callback) callback();
-        } catch (e) { console.error('[Navigator] 角色树解析失败:', e); }
+        } catch (e) { console.error('[Navigator] 角色树解析失败:', e); _rolesCache = []; if (callback) callback(); }
       },
-      error: function (xhr, status, err) { console.warn('[Navigator] 角色树加载失败:', status, err); }
+      error: function () { console.warn('[Navigator] 角色树加载失败'); _rolesCache = []; if (callback) callback(); }
     });
   }
 
-  function updateSelectedRoles() {
-    _selectedRoleIds = [];
+  // 构建角色选择下拉 HTML（用于分组项内）
+  function buildRoleSelectorHtml(groupId) {
+    var selectedIds = _groupRoleMap[groupId] || [];
+    var label = '请选择';
+    var placeholderClass = ' g-role-placeholder';
+    if (selectedIds.length > 0 && _rolesCache) {
+      var names = [];
+      for (var i = 0; i < _rolesCache.length; i++) {
+        if (selectedIds.indexOf(String(_rolesCache[i].id)) !== -1) names.push(_rolesCache[i].text);
+      }
+      if (names.length > 0) { label = names.join('、'); placeholderClass = ''; }
+    }
+    return '<span class="g-role-selector" data-group-id="' + groupId + '">' +
+      '<span class="g-role-btn' + placeholderClass + '">' + label + ' <i class="layui-icon layui-icon-down" style="font-size:10px;margin-left:2px;"></i></span>' +
+      '<span class="g-role-dropdown" style="display:none;"></span></span>';
+  }
+
+  // 渲染角色下拉内容（全选+角色列表）
+  function renderRoleDropdown($dropdown, groupId) {
+    if (!_rolesCache) return;
+    var selectedIds = _groupRoleMap[groupId] || [];
+    var html = '<label class="g-role-item g-role-all"><input type="checkbox" class="g-cb-all"' + (selectedIds.length === _rolesCache.length && _rolesCache.length > 0 ? ' checked' : '') + '> <span>全选</span></label>' +
+      '<div class="g-role-divider"></div>';
+    for (var i = 0; i < _rolesCache.length; i++) {
+      var r = _rolesCache[i];
+      var checked = selectedIds.indexOf(String(r.id)) !== -1 ? ' checked' : '';
+      html += '<label class="g-role-item"><input type="checkbox" class="g-cb" value="' + r.id + '" data-name="' + r.text + '"' + checked + '> <span>' + r.text + '</span></label>';
+    }
+    $dropdown.html(html);
+  }
+
+  // 更新分组项的角色显示
+  function updateGroupRoleLabel($selector, groupId) {
+    var selectedIds = [];
     var names = [];
-    $('.role-cb:checked').each(function () {
-      _selectedRoleIds.push(String($(this).val()));
+    $selector.find('.g-cb:checked').each(function () {
+      selectedIds.push(String($(this).val()));
       names.push($(this).attr('data-name'));
     });
-    var label = document.getElementById('role-label');
-    if (label) {
-      if (_selectedRoleIds.length === 0) {
-        label.textContent = '请选择';
-        label.classList.add('role-placeholder');
-      } else {
-        label.textContent = names.join('、');
-        label.classList.remove('role-placeholder');
-        // 文字过长时截断
-        if (label.textContent.length > 10) label.textContent = label.textContent.substring(0, 10) + '...';
-      }
+    _groupRoleMap[groupId] = selectedIds;
+    var $btn = $selector.find('.g-role-btn');
+    if (selectedIds.length === 0) {
+      $btn.text('请选择 ').append('<i class="layui-icon layui-icon-down" style="font-size:10px;margin-left:2px;"></i>');
+      $btn.addClass('g-role-placeholder');
+    } else {
+      var label = names.join('、');
+      if (label.length > 8) label = label.substring(0, 8) + '...';
+      $btn.text(label + ' ').append('<i class="layui-icon layui-icon-down" style="font-size:10px;margin-left:2px;"></i>');
+      $btn.removeClass('g-role-placeholder');
     }
   }
-
-  // 角色选择按钮点击
-  var btnRoleSelect = document.getElementById('btn-role-select');
-  if (btnRoleSelect) {
-    btnRoleSelect.onclick = function (e) {
-      e.stopPropagation();
-      var dropdown = document.getElementById('role-dropdown');
-      if (!dropdown) return;
-      if (dropdown.style.display === 'none') {
-        if (!_roleDataLoaded) {
-          loadAndRenderRoles(function () {
-            dropdown.style.display = 'block';
-          });
-        } else {
-          dropdown.style.display = 'block';
-        }
-      } else {
-        dropdown.style.display = 'none';
-      }
-    };
-  }
-  // 点击外部关闭角色下拉
-  document.addEventListener('click', function (e) {
-    var selector = document.getElementById('role-selector');
-    if (selector && !selector.contains(e.target)) {
-      var dropdown = document.getElementById('role-dropdown');
-      if (dropdown) dropdown.style.display = 'none';
-    }
-  });
 
   // 保存
   var ctbSave = document.getElementById('ctb-save');
@@ -1420,7 +1451,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var jsonStr = JSON.stringify(data);
       $.ajax({
         type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-        data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: _selectedRoleIds.join(','), data: jsonStr },
+        data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: (_groupRoleMap[currentGroupId] || []).join(','), data: jsonStr },
         success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
         error: function () { layer.msg('保存失败!', { icon: 1, time: 2000 }); }
       });
