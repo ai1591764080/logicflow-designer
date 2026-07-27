@@ -370,7 +370,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         var list = [];
         $.ajax({
             type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-            data: { act: 'Get_NavigatorGroupNew' }, async: false,
+            data: { act: 'Get_DesktopNavigatorGroup' }, async: false,
             success: function (retData) {
                 if (!retData || retData === '') {
                     list = [
@@ -447,7 +447,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     function loadGroupFlow(groupId) {
         $.ajax({
             type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-            data: { act: 'GetData_BNavigator_DiagramDataNew', moduleGroupId: groupId },
+            data: { act: 'GetData_Desktop_BNavigator_DiagramDataNew', moduleGroupId: groupId },
             async: false,
             success: function (retData) {
                 if (retData && retData !== '') {
@@ -598,6 +598,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         lf.removeNodeSnapLine();
         draggingType = '';
         lastMouseX = 0; lastMouseY = 0;
+        updateEmptyState();
     });
 
     // ========== 属性面板逻辑 ==========
@@ -915,7 +916,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             var jsonStr = JSON.stringify(data);
             $.ajax({
                 type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-                data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: '', data: jsonStr },
+                data: { act: 'Save_Desktop_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: '', data: jsonStr },
                 success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
                 error: function () { layer.msg('保存失败!', { icon: 1, time: 2000 }); }
             });
@@ -1006,7 +1007,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             var jsonStr = JSON.stringify(data);
             $.ajax({
                 type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-                data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: '', data: jsonStr },
+                data: { act: 'Save_Desktop_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: '', data: jsonStr },
                 success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
                 error: function () { layer.msg('保存失败!', { icon: 1, time: 2000 }); }
             });
