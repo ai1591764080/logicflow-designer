@@ -1,5 +1,5 @@
 /**
- * 门户导航页页 - 查看/设计双模式 + 分组导航 + 基础图形
+ * 门户导航页 - 编辑模式 + 基础图形
  * 依赖: LogicFlow 2.2.3 (CDN全局变量) + Layui + html2canvas
  */
 layui.use(['layer', 'form', 'colorpicker'], function () {
@@ -38,9 +38,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     return style;
   }
 
-    // ========== 当前模式: view | design ==========
-    var currentMode = 'view';
-    var designGroupId = null; // 当前设计中的分组ID
+    // ========== 当前分组ID ==========
+    var currentGroupId = null;
 
     // ========== 初始化 LogicFlow（可编辑配置） ==========
     var container = document.querySelector('#graph');
@@ -296,7 +295,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     // ========== 键盘快捷键 ==========
     // Delete 键删除选中元素
     lf.keyboard.on('delete', function () {
-        if (currentMode !== 'design') return;
         var selected = lf.getSelectElements(true);
         if (selected.nodes && selected.nodes.length > 0) {
             for (var i = 0; i < selected.nodes.length; i++) {
@@ -313,7 +311,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     // 方向键微调选中节点位置（每次移动一个网格 = 10px）
     var ARROW_STEP = 10;
     function moveSelectedByArrow(dx, dy) {
-        if (currentMode !== 'design') return;
         var selected = lf.getSelectElements(true);
         if (!selected.nodes || selected.nodes.length === 0) return;
         var nodeIds = selected.nodes.map(function (n) { return n.id; });
@@ -404,16 +401,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     function loadGroupList() {
         _groupList = getGroupList();
-        // 渲染左侧树列表
-        var treeHtml = '';
-        for (var i = 0; i < _groupList.length; i++) {
-            var item = _groupList[i];
-            var activeClass = (i === 0) ? ' active' : '';
-            treeHtml += '<div class="nav-tree-item' + activeClass + '" data-group-id="' + item.ModuleGroupId + '">';
-            treeHtml += '<i class="layui-icon layui-icon-right"></i>' + item.ModuleGroupName;
-            treeHtml += '</div>';
-        }
-        document.getElementById('nav-tree-list').innerHTML = treeHtml;
 
         // 渲染顶部下拉框
         var selectEl = document.getElementById('group-select');
@@ -425,66 +412,33 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         }
         selectEl.innerHTML = selectHtml;
 
-        // 树项点击 → 更新下拉 + 加载流程图
-        var treeItems = document.querySelectorAll('.nav-tree-item');
-        for (var k = 0; k < treeItems.length; k++) {
-            treeItems[k].onclick = function () {
-                var groupId = this.getAttribute('data-group-id');
-                currentGroupId = groupId;
-                for (var m = 0; m < treeItems.length; m++) { treeItems[m].classList.remove('active'); }
-                this.classList.add('active');
-                selectEl.value = groupId;
-                // 编辑模式下保持编辑模式，查看模式下保持查看模式
-                if (currentMode === 'design') {
-                    designGroupId = groupId;
-                    loadGroupFlow(groupId);
-                } else {
-                    switchMode('view');
-                    loadGroupFlow(groupId);
-                }
-            };
-        }
-
-        // 下拉框切换 → 更新树选中 + 加载流程图
+        // 下拉框切换 → 加载流程图
         selectEl.onchange = function () {
             var groupId = this.value;
             currentGroupId = groupId;
-            for (var n = 0; n < treeItems.length; n++) {
-                treeItems[n].classList.toggle('active', treeItems[n].getAttribute('data-group-id') === groupId);
-            }
-            // 编辑模式下保持编辑模式，查看模式下保持查看模式
-            if (currentMode === 'design') {
-                designGroupId = groupId;
-                loadGroupFlow(groupId);
-            } else {
-                switchMode('view');
-                loadGroupFlow(groupId);
-            }
+            loadGroupFlow(groupId);
         };
-
 
         // 默认第一个分组
         var defaultGroup = _groupList.length > 0 ? _groupList[0] : null;
-
         if (defaultGroup) {
             currentGroupId = defaultGroup.ModuleGroupId;
-            // 更新树选中状态
-            var treeItems = document.querySelectorAll('.nav-tree-item');
-            for (var t = 0; t < treeItems.length; t++) {
-                treeItems[t].classList.toggle('active', treeItems[t].getAttribute('data-group-id') === String(currentGroupId));
-            }
-            // 更新下拉框选中
-            var selectEl = document.getElementById('group-select');
             if (selectEl) selectEl.value = currentGroupId;
-            switchMode('view'); // 初始化为查看模式，禁用编辑操作
             loadGroupFlow(currentGroupId);
         }
+        // 默认开启框选
+        if (lf.openSelectionSelect) {
+            setTimeout(function () {
+                lf.openSelectionSelect();
+                var btn = document.getElementById('ctb-select');
+                if (btn) btn.classList.add('tb-active');
+            }, 200);
+        }
     }
-    // ========== 空画布提示（仅查看模式显示） ==========
+    // ========== 空画布提示 ==========
     function updateEmptyState() {
         var el = document.getElementById('empty-canvas');
         if (!el) return;
-        if (currentMode !== 'view') { el.style.display = 'none'; return; }
         var graphData = lf.getGraphData();
         var isEmpty = (!graphData.nodes || graphData.nodes.length === 0) && (!graphData.edges || graphData.edges.length === 0);
         el.style.display = isEmpty ? 'block' : 'none';
@@ -527,84 +481,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         clearPanel();
     }
 
-    // ========== 模式切换 ==========
-    function switchMode(mode) {
-        currentMode = mode;
-        var body = document.body;
-        body.classList.remove('mode-view', 'mode-design');
-        body.classList.add('mode-' + mode);
-
-        var shapesSection = document.querySelector('.shapes-section');
-        var rightPanel = document.getElementById('right-panel');
-        var canvasToolbar = document.getElementById('canvas-toolbar');
-        var viewOnlyEls = document.querySelectorAll('.view-only');
-        if (mode === 'view') {
-            // 查看模式: 显示分组, 隐藏图形/属性/工具栏
-            designGroupId = null;
-            if (shapesSection) shapesSection.style.display = 'none';
-            if (rightPanel) rightPanel.style.display = 'none';
-            if (canvasToolbar) canvasToolbar.style.display = 'none';
-            // 关闭框选模式
-            if (lf.closeSelectionSelect) {
-                lf.closeSelectionSelect();
-            }
-            var ctbSelectBtn = document.getElementById('ctb-select');
-            if (ctbSelectBtn) ctbSelectBtn.classList.remove('tb-active');
-            for (var j = 0; j < viewOnlyEls.length; j++) viewOnlyEls[j].style.display = '';
-
-            // 禁用所有编辑操作（静默模式）
-            lf.updateEditConfig({
-                isSilentMode: true,
-                adjustNodePosition: false,
-                allowRotate: false,
-                allowResize: false,
-                adjustEdge: false,
-                adjustEdgeStartAndEnd: false,
-                nodeTextEdit: false,
-                edgeTextEdit: false,
-                nodeTextDraggable: false,
-                edgeTextDraggable: false,
-                hideAnchors: true,
-                hoverOutline: false,
-                edgeSelectedOutline: false,
-            });
-            // 重置画布缩放和位置
-            // lf.resetZoom();
-            // lf.resetTranslate();
-        } else {
-            // 设计模式: 显示图形/属性/工具栏, 隐藏分组
-            if (shapesSection) shapesSection.style.display = 'block';
-            if (rightPanel) rightPanel.style.display = 'block';
-            if (canvasToolbar) canvasToolbar.style.display = 'flex';
-            for (var j = 0; j < viewOnlyEls.length; j++) viewOnlyEls[j].style.display = 'none';
-            // 恢复所有编辑操作
-            lf.updateEditConfig({
-                isSilentMode: false,
-                adjustNodePosition: true,
-                allowRotate: true,
-                allowResize: true,
-                adjustEdge: true,
-                adjustEdgeStartAndEnd: true,
-                nodeTextEdit: true,
-                edgeTextEdit: true,
-                nodeTextDraggable: true,
-                edgeTextDraggable: true,
-                hideAnchors: false,
-                hoverOutline: true,
-                edgeSelectedOutline: false,
-            });
-            debugger
-            // 设计模式默认开启框选
-            if (lf.openSelectionSelect) {
-                setTimeout(function () {
-                    lf.openSelectionSelect();
-                    var btn = document.getElementById('ctb-select');
-                    if (btn) btn.classList.add('tb-active');
-                }, 200);
-            }
-        }
-        setTimeout(function () { lf.resize(); }, 100);
-    }
+    // (switchMode 已移除，页面始终为编辑模式)
 
     // ========== 拖拽添加节点 ==========
     // 各类型节点的实际画布尺寸（与节点模型默认值一致）
@@ -740,7 +617,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     };
 
     function renderNodePanel(data) {
-    if (currentMode !== 'design') return; // 查看模式不显示属性面板
     currentElementId = data.id;
     currentElementType = 'node';
     var props = data.properties || {};
@@ -830,8 +706,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
     function renderEdgePanel(data) {
-        debugger
-        if (currentMode !== 'design') return;
         currentElementId = data.id;
         currentElementType = 'edge';
         var props = data.properties || {};
@@ -928,7 +802,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
 
     function renderBlankPanel() {
-        if (currentMode !== 'design') return;
         currentElementId = null; currentElementType = null;
         document.getElementById('props-content').innerHTML =
             '<div class="empty-tip"><i class="layui-icon layui-icon-set"></i>请在画布中选中节点或连线<br>以配置详细属性</div>' +
@@ -953,39 +826,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     // ========== 事件监听 ==========
     lf.on('node:click', function (arg) {
-        if (currentMode === 'design') {
-            renderNodePanel(arg.data);
-        } else {
-            // 查看模式：调用模块点击接口
-            var props = arg.data.properties || {};
-            var mi = props.moduleInfo || {};
-            var moduleId = mi.Id || props.module || '';
-            var flag = mi.Flag || 0;
-            if (!moduleId) {
-                return layer.msg('该节点未分配模块', { icon: 0 });
-            }
-            $.ajax({
-                type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
-                data: { act: 'GetModuleClick', moduleId: moduleId, flag: flag },
-                success: function (retData) {
-                    if (retData) {
-                        retData = 'GetParentWindow().' + retData;
-                        try { eval(retData); } catch (e) { console.error('[Navigator] 模块点击执行失败:', e); }
-                    }
-                },
-                error: function (msg) { console.error('[Navigator] 模块点击请求失败:', msg); }
-            });
-        }
+        renderNodePanel(arg.data);
     });
-    lf.on('edge:click', function (arg) { if (currentMode === 'design') renderEdgePanel(arg.data); });
-    lf.on('blank:click', function () { if (currentMode === 'design') renderBlankPanel(); });
+    lf.on('edge:click', function (arg) { renderEdgePanel(arg.data); });
+    lf.on('blank:click', function () { renderBlankPanel(); });
     lf.on('node:delete', function () { clearPanel(); updateEmptyState(); });
     lf.on('edge:delete', function () { clearPanel(); updateEmptyState(); });
     // 点击节点文字时也显示属性面板（文字层可能拦截了 node:click 事件）
     var graphContainer = document.getElementById('graph');
     if (graphContainer) {
         graphContainer.addEventListener('click', function (e) {
-            if (currentMode !== 'design') return;
             var target = e.target;
             var isTextClick = target.tagName === 'text' || target.tagName === 'tspan';
             if (!isTextClick) return;
@@ -1071,13 +921,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             });
         });
     };
-    // 取消
-    var btnCancel = document.getElementById('btn-cancel');
-    if (btnCancel) btnCancel.onclick = function () {
-        switchMode('view');
-        // 重新加载当前分组的流程图
-        if (currentGroupId) loadGroupFlow(currentGroupId);
-    };
+
 
     // ========== 画布工具栏按钮 ==========
     var ctbUndo = document.getElementById('ctb-undo');
@@ -1212,7 +1056,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var menu = document.getElementById('context-menu');
     graphEl.addEventListener('contextmenu', function (e) {
         e.preventDefault();
-        if (currentMode === 'design' && currentElementId) {
+        if (currentElementId) {
             menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
         } else { menu.style.display = 'none'; }
     });
@@ -1233,5 +1077,4 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     // ========== 初始化 ==========
     loadGroupList();
-    switchMode('view');
 });

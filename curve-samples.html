@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>WPS文档节点曲线样本</title>
+<style>
+  body { margin: 0; padding: 30px; background: #f0f2f5; font-family: -apple-system, Arial, sans-serif; }
+  h2 { color: #333; margin-bottom: 8px; }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 24px; }
+  .samples { display: flex; flex-wrap: wrap; gap: 24px; }
+  .sample { background: #fff; border: 2px solid #e8e8e8; border-radius: 10px; padding: 16px 20px 14px; text-align: center; cursor: pointer; transition: all 0.2s; min-width: 180px; }
+  .sample:hover { border-color: #1e9fff; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+  .sample.selected { border-color: #1e9fff; box-shadow: 0 0 0 3px rgba(30,159,255,0.2); background: #f0f7ff; }
+  .sample svg { display: block; margin: 0 auto 8px; }
+  .sample .label { font-size: 13px; font-weight: 600; color: #333; }
+  .sample .desc { font-size: 11px; color: #999; margin-top: 3px; line-height: 1.4; }
+  .result { margin-top: 30px; padding: 20px 24px; background: #fff; border: 1px solid #ddd; border-radius: 10px; display: none; }
+  .result h3 { margin: 0 0 10px; color: #333; }
+  .result .info { font-size: 13px; color: #666; margin-bottom: 12px; }
+  .result code { background: #f5f5f5; padding: 3px 8px; border-radius: 4px; font-size: 12px; color: #d63384; display: block; margin: 6px 0; word-break: break-all; }
+  #applyBtn { padding: 10px 32px; background: #1e9fff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  #applyBtn:hover { background: #1890ff; }
+  .ref-img { margin-bottom: 20px; padding: 12px; background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; display: inline-block; }
+  .ref-label { font-size: 12px; color: #999; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<h2>WPS 流程图文档节点 — 底部曲线方案选择</h2>
+<p class="subtitle">参考图（WPS文档形状）：</p>
+<div class="ref-img">
+  <svg width="160" height="100" viewBox="0 0 160 100">
+    <path d="M10 10 L150 10 L150 70 C130 78 115 78 80 78 C45 78 30 78 10 70 Z" fill="#fff" stroke="#333" stroke-width="2"/>
+  </svg>
+  <div class="ref-label">WPS 文档形状参考</div>
+</div>
+
+<div class="samples" id="samples"></div>
+
+<div class="result" id="result">
+  <h3>已选择：<span id="selectedName"></span></h3>
+  <div class="info">
+    <div>画布 SVG 路径：</div>
+    <code id="svgPath"></code>
+    <div>Canvas 拖拽预览路径：</div>
+    <code id="canvasPath"></code>
+  </div>
+  <button id="applyBtn" onclick="applySelection()">确认应用此方案</button>
+</div>
+
+<script>
+// 各方案的曲线生成函数
+// 参数: x, y 为左上角, w, h 为宽高
+// 返回 SVG path d 属性值
+var schemes = [
+  {
+    name: '方案1：WPS经典波浪（左凹右凸）',
+    desc: 'WPS默认文档形状，左边下凹右边上凸，弧度柔和自然',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.18;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.67)+' '+(bY-a)+', '+(x+w*0.67)+' '+(bY-a)+', '+(x+w*0.5)+' '+(bY-a)+
+        ' C '+(x+w*0.33)+' '+(bY+a)+', '+(x+w*0.33)+' '+(bY+a)+', '+x+' '+bY+' Z';
+    }
+  },
+  {
+    name: '方案2：WPS经典波浪（右凹左凸）',
+    desc: '与方案1方向相反，右边下凹左边上凸',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.18;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.67)+' '+(bY+a)+', '+(x+w*0.67)+' '+(bY+a)+', '+(x+w*0.5)+' '+(bY+a)+
+        ' C '+(x+w*0.33)+' '+(bY-a)+', '+(x+w*0.33)+' '+(bY-a)+', '+x+' '+bY+' Z';
+    }
+  },
+  {
+    name: '方案3：对称下凹（卷轴形）',
+    desc: '两端高中间低，像卷轴底部，对称优美',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.22;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.7)+' '+(bY+a)+', '+(x+w*0.3)+' '+(bY+a)+', '+x+' '+bY+' Z';
+    }
+  },
+  {
+    name: '方案4：对称上凸（微笑形）',
+    desc: '两端低中间高，像微笑曲线',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.22;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.7)+' '+(bY-a)+', '+(x+w*0.3)+' '+(bY-a)+', '+x+' '+bY+' Z';
+    }
+  },
+  {
+    name: '方案5：WPS大波浪（左凹右凸）',
+    desc: '与方案1同方向但振幅更大，曲线更明显',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.32;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.67)+' '+(bY-a)+', '+(x+w*0.67)+' '+(bY-a)+', '+(x+w*0.5)+' '+(bY-a)+
+        ' C '+(x+w*0.33)+' '+(bY+a)+', '+(x+w*0.33)+' '+(bY+a)+', '+x+' '+bY+' Z';
+    }
+  },
+  {
+    name: '方案6：WPS大波浪（右凹左凸）',
+    desc: '与方案5方向相反，振幅更大',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.32;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.67)+' '+(bY+a)+', '+(x+w*0.67)+' '+(bY+a)+', '+(x+w*0.5)+' '+(bY+a)+
+        ' C '+(x+w*0.33)+' '+(bY-a)+', '+(x+w*0.33)+' '+(bY-a)+', '+x+' '+bY+' Z';
+    }
+  },
+  {
+    name: '方案7：浅S形（左凹右凸）',
+    desc: '非常柔和的S形波浪，几乎看不出起伏',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.1;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.67)+' '+(bY-a)+', '+(x+w*0.67)+' '+(bY-a)+', '+(x+w*0.5)+' '+(bY-a)+
+        ' C '+(x+w*0.33)+' '+(bY+a)+', '+(x+w*0.33)+' '+(bY+a)+', '+x+' '+bY+' Z';
+    }
+  },
+  {
+    name: '方案8：三段波浪',
+    desc: '凹-凸-凹三段式波浪，更复杂的曲线',
+    svg: function(x,y,w,h) {
+      var bY = y+h, a = h*0.15;
+      return 'M '+x+' '+y+' L '+(x+w)+' '+y+' L '+(x+w)+' '+bY+
+        ' C '+(x+w*0.75)+' '+(bY-a)+', '+(x+w*0.58)+' '+(bY-a)+', '+(x+w*0.5)+' '+bY+
+        ' C '+(x+w*0.42)+' '+(bY+a)+', '+(x+w*0.25)+' '+(bY+a)+', '+x+' '+bY+' Z';
+    }
+  }
+];
+
+var container = document.getElementById('samples');
+var selectedIdx = -1;
+var SW = 200, SH = 120, SX = 25, SY = 15, SW2 = SW-50, SH2 = SH-40;
+
+schemes.forEach(function(s, i) {
+  var div = document.createElement('div');
+  div.className = 'sample';
+  div.innerHTML = '<svg width="'+SW+'" height="'+SH+'" viewBox="0 0 '+SW+' '+SH+'">' +
+    '<path d="'+s.svg(SX,SY,SW2,SH2)+'" fill="#ffffff" stroke="#333" stroke-width="2"/>' +
+    '</svg>' +
+    '<div class="label">'+s.name+'</div>' +
+    '<div class="desc">'+s.desc+'</div>';
+  div.onclick = function() {
+    document.querySelectorAll('.sample').forEach(function(el){ el.classList.remove('selected'); });
+    div.classList.add('selected');
+    selectedIdx = i;
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('selectedName').textContent = s.name;
+    // 生成实际画布尺寸的路径
+    var cw = 110, ch = 65, cx = 0, cy = 0;
+    document.getElementById('svgPath').textContent = s.svg(cx, cy, cw, ch);
+    // 生成拖拽预览尺寸的路径描述
+    document.getElementById('canvasPath').textContent = '振幅系数: ' + (s.svg.toString().match(/h\*(\d+\.\d+|\d+)/)||['','?'])[1] + ' (h=' + ch + '时振幅=' + (ch * parseFloat((s.svg.toString().match(/h\*(\d+\.\d+|\d+)/)||['','0'])[1])).toFixed(1) + 'px)';
+  };
+  container.appendChild(div);
+});
+
+function applySelection() {
+  if (selectedIdx < 0) return;
+  var s = schemes[selectedIdx];
+  var cw = 110, ch = 65;
+  var pathData = s.svg(0, 0, cw, ch);
+  alert('已选择: ' + s.name + '\n\n画布SVG路径 (110x65):\n' + pathData + '\n\n点击确定后自动应用到项目。');
+  // 通过 postMessage 通知父窗口
+  if (window.opener) {
+    window.opener.postMessage({ type: 'curveSelected', index: selectedIdx, path: pathData }, '*');
+  }
+}
+</script>
+
+</body>
+</html>

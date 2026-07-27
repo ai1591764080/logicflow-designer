@@ -11,26 +11,8 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         .main-container { flex: 1; display: flex; min-height: 0; }
 
-        /* 左侧面板 */
-        .left-panel { width: 220px; background: #fff; border-right: 1px solid #e6e6e6; display: flex; flex-direction: column; flex-shrink: 0; position: relative; }
-
-        /* 分组树区域 */
-        .nav-tree-section { flex: 1; overflow-y: auto; padding: 12px 0; }
-        .nav-tree-title { font-size: 14px; font-weight: 600; color: #333; padding: 4px 16px 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .nav-tree-title i { font-size: 12px; color: #999; }
-        .nav-tree-list { padding: 0 8px; }
-        .nav-tree-item { padding: 6px 12px 6px 24px; font-size: 13px; color: #555; cursor: pointer; border-radius: 4px; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
-        .nav-tree-item:hover { background: #f0f7ff; color: #1e9fff; }
-        .nav-tree-item.active { background: #e6f7ff; color: #1890ff; font-weight: 600; }
-        .nav-tree-item i { font-size: 12px; color: #fa8c16; }
-                .nav-dot-grid { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 2px; width: 8px; height: 12px; flex-shrink: 0; }
-                .nav-dot-grid i { width: 3px; height: 3px; border-radius: 50%; background: #bbb; display: block; }
-                .nav-tree-item:hover .nav-dot-grid i, .nav-tree-item.active .nav-dot-grid i { background: #1890ff; }
-
-
-
-        /* 基础图形区（设计模式） */
-        .shapes-section { padding: 12px; flex: 1; overflow-y: auto; }
+        /* 基础图形区 */
+        .shapes-section { padding: 12px; width: 200px; background: #fff; border-right: 1px solid #e6e6e6; overflow-y: auto; flex-shrink: 0; }
         .shapes-section .shapes-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1e9fff; }
         .base-shapes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .node-item { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 56px; border: none; border-radius: 4px; cursor: grab; background: transparent; user-select: none; }
@@ -58,7 +40,7 @@
         .center-panel { flex: 1; background: #fafafa; position: relative; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
 
         /* 右侧属性面板 */
-        .right-panel { width: 290px; background-color: #ffffff !important; background: #ffffff !important; border-left: 1px solid #e8ecf0; padding: 0; overflow-y: auto; flex-shrink: 0; display: none; }
+        .right-panel { width: 290px; background-color: #ffffff !important; background: #ffffff !important; border-left: 1px solid #e8ecf0; padding: 0; overflow-y: auto; flex-shrink: 0; }
         .right-panel.collapsed { width: 0; overflow: hidden; border-left: none; }
         .right-panel .panel-title { font-size: 14px; color: #1a1a2e; margin: 0; padding: 14px 20px; border-bottom: 1px solid #eef1f5; font-weight: 600; background: #fafbfc !important; position: sticky; top: 0; z-index: 1; }
         .right-panel #props-content { padding: 0; background: #ffffff !important; min-height: 200px; }
@@ -101,8 +83,8 @@
         .toggle-btn i { font-size: 12px; color: #999; }
         .right-toggle { left: -17px; border-radius: 4px 0 0 4px; border-right: none; }
 
-        /* 画布工具栏（设计模式） */
-        .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: none; align-items: center; gap: 4px; flex-shrink: 0; }
+        /* 画布工具栏 */
+        .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .canvas-toolbar .tb-btn { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #e0e4ea; border-radius: 4px; background: #fff; color: #5a6170; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
         .canvas-toolbar .tb-btn:hover { border-color: #1e9fff; color: #1e9fff; background: #f0f7ff; }
         .canvas-toolbar .tb-btn i { font-size: 14px; }
@@ -113,8 +95,6 @@
         .canvas-toolbar .tb-btn.tb-save:hover { background: #1890ff; }
         .canvas-toolbar .tb-btn.tb-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
         .canvas-toolbar .tb-btn.tb-export:hover { background: #1890ff; color: #fff; }
-        .fullscreen-mode .left-panel, .fullscreen-mode .right-panel { display: none; }
-        .fullscreen-mode .center-panel { position: fixed; left: 0; top: 44px; width: 100%; height: calc(100vh - 44px); z-index: 100; }
 
         /* 顶部栏 */
         .top-bar { height: 44px; background: #fff; border-bottom: 1px solid #e8ecf0; display: flex; align-items: center; padding: 0 16px; flex-shrink: 0; }
@@ -129,32 +109,11 @@
         .top-bar-actions .btn-action.btn-primary { background: #1890ff; border-color: #1890ff; color: #fff; }
         .top-bar-actions .btn-action.btn-primary:hover { background: #40a9ff; border-color: #40a9ff; color: #fff; }
 
-        /* 画布工具栏（设计模式） */
-        .canvas-toolbar { height: 40px; background: #fff; border-bottom: 1px solid #e8ecf0; padding: 0 12px; display: none; align-items: center; gap: 4px; flex-shrink: 0; }
-        .canvas-toolbar .tb-btn { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #e0e4ea; border-radius: 4px; background: #fff; color: #5a6170; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
-        .canvas-toolbar .tb-btn:hover { border-color: #1e9fff; color: #1e9fff; background: #f0f7ff; }
-        .canvas-toolbar .tb-btn i { font-size: 14px; }
-        .canvas-toolbar .tb-divider { width: 1px; height: 20px; background: #e8ecf0; margin: 0 4px; }
-        .canvas-toolbar .tb-select { height: 28px; border: 1px solid #e0e4ea; border-radius: 4px; padding: 0 8px; font-size: 12px; color: #5a6170; background: #fff; outline: none; cursor: pointer; }
-        .canvas-toolbar .tb-select:hover { border-color: #1e9fff; }
-        .canvas-toolbar .tb-btn.tb-save { background: #1e9fff; border-color: #1e9fff; color: #fff; margin-left: auto; }
-        .canvas-toolbar .tb-btn.tb-save:hover { background: #1890ff; }
-        .canvas-toolbar .tb-btn.tb-export { background: #f0f7ff; border-color: #b3d8ff; color: #1890ff; }
-        .canvas-toolbar .tb-btn.tb-export:hover { background: #1890ff; color: #fff; }
-
         /* 小地图按钮样式 */
         #ctb-minimap:hover { border-color: #1e9fff !important; color: #1e9fff !important; background: #f0f7ff !important; box-shadow: 0 4px 16px rgba(30,159,255,0.2) !important; }
         #ctb-minimap.active { border-color: #1e9fff !important; color: #1e9fff !important; background: #e6f7ff !important; }
 
-        /* 模式控制 */
-        .mode-view .edit-only { display: none !important; }
-        .mode-design .view-only { display: none !important; }
-        .mode-view .lf-grid { display: none !important; }
-        .mode-view .lf-node-selected-outline { display: none !important; }
-        .mode-view .lf-edge-adjust, .mode-view .lf-node-adjust { display: none !important; }
-        .mode-view .lf-anchor { display: none !important; }
-
-        /* 光标样式：节点显示小手，线条显示默认光标 */
+        /* 光标样式 */
         .lf-node { cursor: pointer; }
         .lf-edge { cursor: default; }
 
@@ -171,7 +130,7 @@
         #context-menu .menu-item i { margin-right: 8px; font-size: 16px; }
     </style>
 </head>
-<body class="mode-view">
+<body>
 
 <!-- 顶部栏 -->
 <div class="top-bar">
@@ -182,40 +141,30 @@
     </select>
     <div class="top-bar-actions">
         <button class="btn-action btn-primary" id="btn-save"><i class="layui-icon layui-icon-ok" style="margin-right:4px;"></i>保存</button>
-        <button class="btn-action edit-only" id="btn-cancel">取消</button>
     </div>
 </div>
 
 <!-- 主体布局 -->
 <div class="main-container">
-    <!-- 左侧面板 -->
-    <div class="left-panel" id="left-panel">
-        <!-- 分组树（查看模式） -->
-        <div class="nav-tree-section view-only">
-            <div class="nav-tree-title"><i class="layui-icon layui-icon-triangle-r"></i> 导航分组</div>
-            <div class="nav-tree-list" id="nav-tree-list"></div>
+    <!-- 基础图形面板 -->
+    <div class="shapes-section">
+        <div class="shapes-title">基础图形</div>
+        <div class="base-shapes-grid">
+            <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div></div>
+            <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div></div>
+            <div class="node-item" draggable="true" data-type="sharp-rect"><div class="node-shape shape-sharp-rect"></div></div>
+            <div class="node-item" draggable="true" data-type="round-rect"><div class="node-shape shape-round-rect"></div></div>
+            <div class="node-item" draggable="true" data-type="document"><div class="node-shape shape-document"></div></div>
+            <div class="node-item" draggable="true" data-type="subprocess"><div class="node-shape shape-subprocess"></div></div>
+            <div class="node-item" draggable="true" data-type="internal-storage"><div class="node-shape shape-internal-storage"></div></div>
+            <div class="node-item" draggable="true" data-type="circle"><div class="node-shape shape-base-circle"></div></div>
+            <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div></div>
         </div>
-        <!-- 基础图形（设计模式） -->
-        <div class="shapes-section" style="display:none;">
-            <div class="shapes-title">基础图形</div>
-            <div class="base-shapes-grid">
-                <div class="node-item" draggable="true" data-type="rect"><div class="node-shape shape-base-rect"></div></div>
-                <div class="node-item" draggable="true" data-type="oblong"><div class="node-shape shape-oblong"></div></div>
-                <div class="node-item" draggable="true" data-type="sharp-rect"><div class="node-shape shape-sharp-rect"></div></div>
-                <div class="node-item" draggable="true" data-type="round-rect"><div class="node-shape shape-round-rect"></div></div>
-                <div class="node-item" draggable="true" data-type="document"><div class="node-shape shape-document"></div></div>
-                <div class="node-item" draggable="true" data-type="subprocess"><div class="node-shape shape-subprocess"></div></div>
-                <div class="node-item" draggable="true" data-type="internal-storage"><div class="node-shape shape-internal-storage"></div></div>
-                <div class="node-item" draggable="true" data-type="circle"><div class="node-shape shape-base-circle"></div></div>
-                <div class="node-item" draggable="true" data-type="diamond"><div class="node-shape shape-base-diamond"></div></div>
-            </div>
-        </div>
-
     </div>
 
     <!-- 中间画布区域 -->
     <div class="center-panel">
-        <!-- 画布工具栏（设计模式） -->
+        <!-- 画布工具栏 -->
         <div class="canvas-toolbar" id="canvas-toolbar">
             <button class="tb-btn" id="ctb-undo" title="撤销"><i class="layui-icon layui-icon-left"></i></button>
             <button class="tb-btn" id="ctb-redo" title="重做"><i class="layui-icon layui-icon-right"></i></button>
@@ -252,7 +201,7 @@
         </div>
     </div>
 
-    <!-- 右侧属性面板（设计模式） -->
+    <!-- 右侧属性面板 -->
     <div class="right-panel" id="right-panel" style="background:#fff;min-height:100%;">
         <div class="panel-title">属性配置</div>
         <div id="props-content">
@@ -313,7 +262,7 @@
   }
 </script>
 
-<script src="dist/navigator.js"></script>
+<script src="dist/portal-nav.js"></script>
 
 </body>
 </html>
