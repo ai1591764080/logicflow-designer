@@ -1052,6 +1052,25 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
 
     // ========== 顶部按钮 ==========
+    // 保存按钮
+    var btnSave = document.getElementById('btn-save');
+    if (btnSave) btnSave.onclick = function () {
+        var data = lf.getGraphData();
+        var transform = lf.getTransform();
+        data.transform = { SCALE_X: transform.SCALE_X, SCALE_Y: transform.SCALE_Y, TRANSLATE_X: transform.TRANSLATE_X, TRANSLATE_Y: transform.TRANSLATE_Y };
+        if (!data.nodes || data.nodes.length === 0) return layer.msg('画布为空，无法保存！', { icon: 2 });
+        if (!currentGroupId) return layer.msg('请先选择一个导航分组！', { icon: 2 });
+        layer.confirm('确定要保存当前导航图吗？', { icon: 3, title: '保存确认' }, function (index) {
+            layer.close(index);
+            var jsonStr = JSON.stringify(data);
+            $.ajax({
+                type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
+                data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: '', data: jsonStr },
+                success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
+                error: function () { layer.msg('保存失败!', { icon: 1, time: 2000 }); }
+            });
+        });
+    };
     // 取消
     var btnCancel = document.getElementById('btn-cancel');
     if (btnCancel) btnCancel.onclick = function () {
