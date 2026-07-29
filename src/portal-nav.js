@@ -591,18 +591,18 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                     properties: {}
                 });
             }
-            // 更新假节点位置与吸附线
+            // 更新假节点位置与吸附线（仅顶部+左侧对齐，无中心对齐）
             if (draggingNode) {
                 draggingNode.moveTo(x, y);
                 lf.setNodeSnapLine(draggingNode.getData());
                 var sm = lf.snaplineModel;
-                // 自定义顶部对齐检测（优先于中心对齐）
+                // 禁用中心对齐，只做顶部/左侧边缘检测
                 if (sm) {
+                    sm.isShowHorizontal = false;
+                    sm.isShowVertical = false;
                     var dragH = draggingNode.height, dragW = draggingNode.width;
                     var dragTop = draggingNode.y - dragH / 2;
-                    var dragBottom = draggingNode.y + dragH / 2;
                     var dragLeft = draggingNode.x - dragW / 2;
-                    var dragRight = draggingNode.x + dragW / 2;
                     var allNodes = lf.graphModel.nodes;
                     var topFound = false, topY = 0;
                     var leftFound = false, leftX = 0;
@@ -615,61 +615,35 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                             minY: node.y - node.height / 2,
                             maxY: node.y + node.height / 2
                         };
-                        // 顶部对齐：拖拽节点顶部 vs 其他节点顶部 / 拖拽节点顶部 vs 其他节点底部
                         if (!topFound && (Math.abs(dragTop - bbox.minY) <= sm.epsilon || Math.abs(dragTop - bbox.maxY) <= sm.epsilon)) {
                             topFound = true;
                             topY = Math.abs(dragTop - bbox.minY) <= sm.epsilon ? bbox.minY : bbox.maxY;
                         }
-                        // 左侧对齐：拖拽节点左侧 vs 其他节点左侧 / 拖拽节点左侧 vs 其他节点右侧
                         if (!leftFound && (Math.abs(dragLeft - bbox.minX) <= sm.epsilon || Math.abs(dragLeft - bbox.maxX) <= sm.epsilon)) {
                             leftFound = true;
                             leftX = Math.abs(dragLeft - bbox.minX) <= sm.epsilon ? bbox.minX : bbox.maxX;
                         }
                         if (topFound && leftFound) break;
                     }
-                    // 覆盖水平对齐线到顶部
                     if (topFound) {
                         sm.isShowHorizontal = true;
                         sm.position.y = topY;
+                        // 磁吸：顶部对齐 → 修正节点中心Y
+                        var snapY = topY + dragH / 2;
+                        if (Math.abs(snapY - y) > 1) {
+                            draggingNode.moveTo(draggingNode.x, snapY);
+                            lf.setNodeSnapLine(draggingNode.getData());
+                        }
                     }
-                    // 覆盖垂直对齐线到左侧
                     if (leftFound) {
                         sm.isShowVertical = true;
                         sm.position.x = leftX;
-                    }
-                }
-                // 磁吸对齐：对齐线亮起时吸附到精确位置
-                if (sm && (sm.isShowHorizontal || sm.isShowVertical)) {
-                    var snapX = x, snapY = y;
-                    if (sm.isShowVertical) {
-                        var w = draggingNode.width;
-                        var leftX2 = draggingNode.x - w / 2;
-                        var rightX2 = draggingNode.x + w / 2;
-                        var epsX = sm.epsilon;
-                        if (Math.abs(leftX2 - sm.position.x) < epsX) {
-                            snapX = sm.position.x + w / 2;
-                        } else if (Math.abs(rightX2 - sm.position.x) < epsX) {
-                            snapX = sm.position.x - w / 2;
-                        } else {
-                            snapX = sm.position.x;
+                        // 磁吸：左侧对齐 → 修正节点中心X
+                        var snapX = leftX + dragW / 2;
+                        if (Math.abs(snapX - x) > 1) {
+                            draggingNode.moveTo(snapX, draggingNode.y);
+                            lf.setNodeSnapLine(draggingNode.getData());
                         }
-                    }
-                    if (sm.isShowHorizontal) {
-                        var h = draggingNode.height;
-                        var topY2 = draggingNode.y - h / 2;
-                        var bottomY2 = draggingNode.y + h / 2;
-                        var epsY = sm.epsilon;
-                        if (Math.abs(topY2 - sm.position.y) < epsY) {
-                            snapY = sm.position.y + h / 2;
-                        } else if (Math.abs(bottomY2 - sm.position.y) < epsY) {
-                            snapY = sm.position.y - h / 2;
-                        } else {
-                            snapY = sm.position.y;
-                        }
-                    }
-                    if (snapX !== x || snapY !== y) {
-                        draggingNode.moveTo(snapX, snapY);
-                        lf.setNodeSnapLine(draggingNode.getData());
                     }
                 }
             }
