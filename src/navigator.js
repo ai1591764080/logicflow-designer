@@ -900,6 +900,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
   // 拖拽时使用实际节点尺寸作为拖影
   var draggingType = '';
+  var draggingNode = null;
   document.querySelectorAll('.node-item').forEach(function (item) {
     item.addEventListener('dragstart', function (e) {
       var type = this.getAttribute('data-type');
@@ -923,6 +924,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     item.addEventListener('dragend', function () {
       draggingType = '';
       lf.removeNodeSnapLine();
+      if (draggingNode) {
+        lf.graphModel.removeFakeNode();
+        draggingNode = null;
+      }
     });
   });
 
@@ -936,7 +941,20 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (draggingType) {
       var point = lf.getPointByClient(e.clientX, e.clientY);
       var size = nodeActualSizes[draggingType] || { w: 80, h: 60 };
-      lf.setNodeSnapLine({ type: draggingType, x: point.canvasOverlayPosition.x, y: point.canvasOverlayPosition.y, width: size.w, height: size.h, properties: {} });
+      var x = point.canvasOverlayPosition.x, y = point.canvasOverlayPosition.y;
+      // 首次进入画布：创建假节点用于对齐线计算
+      if (!draggingNode) {
+        draggingNode = lf.createFakeNode({
+          type: draggingType, x: x, y: y,
+          width: size.w, height: size.h,
+          properties: {}
+        });
+      }
+      // 更新假节点位置与吸附线
+      if (draggingNode) {
+        draggingNode.moveTo(x, y);
+        lf.setNodeSnapLine(draggingNode.getData());
+      }
     }
   });
 
@@ -958,6 +976,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       properties: { owner: '', desc: '', fill: '', stroke: '', strokeWidth: '', module: '' }
     });
     lf.removeNodeSnapLine();
+    if (draggingNode) {
+      lf.graphModel.removeFakeNode();
+      draggingNode = null;
+    }
     draggingType = '';
     lastMouseX = 0; lastMouseY = 0;
   });
