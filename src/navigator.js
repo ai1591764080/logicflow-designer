@@ -80,47 +80,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     snapline: { stroke: '#555555', strokeWidth: 1, strokeDasharray: '3,3' }
   });
 
-  // 全局拦截 getSnapLinePosition：仅边缘对齐，无中心对齐
+  // 全局拦截 getSnapLinePosition：仅边缘对齐（顶部/底部/左侧/右侧），无中心对齐
   (function() {
-    var _orig = lf.snaplineModel.getSnapLinePosition.bind(lf.snaplineModel);
     lf.snaplineModel.getSnapLinePosition = function(nodeData, nodes) {
-      var dragW = nodeData.width || 80, dragH = nodeData.height || 60;
-      var dragTop = nodeData.y - dragH / 2;
-      var dragBottom = nodeData.y + dragH / 2;
-      var dragLeft = nodeData.x - dragW / 2;
-      var dragRight = nodeData.x + dragW / 2;
-      var hFound = false, hY = 0;
-      var vFound = false, vX = 0;
-      for (var i = 0; i < nodes.length; i++) {
-        var n = nodes[i];
-        if (n.id === nodeData.id) continue;
-        var b = { minX: n.x - n.width / 2, maxX: n.x + n.width / 2, minY: n.y - n.height / 2, maxY: n.y + n.height / 2 };
-        // 水平对齐：拖拽节点顶部/底部 vs 其他节点顶部/底部
-        if (!hFound) {
-          if (Math.abs(dragTop - b.minY) <= this.epsilon || Math.abs(dragTop - b.maxY) <= this.epsilon) {
-            hFound = true;
-            hY = Math.abs(dragTop - b.minY) <= this.epsilon ? b.minY : b.maxY;
-          } else if (Math.abs(dragBottom - b.minY) <= this.epsilon || Math.abs(dragBottom - b.maxY) <= this.epsilon) {
-            hFound = true;
-            hY = Math.abs(dragBottom - b.minY) <= this.epsilon ? b.minY : b.maxY;
-          }
-        }
-        // 垂直对齐：拖拽节点左侧/右侧 vs 其他节点左侧/右侧
-        if (!vFound) {
-          if (Math.abs(dragLeft - b.minX) <= this.epsilon || Math.abs(dragLeft - b.maxX) <= this.epsilon) {
-            vFound = true;
-            vX = Math.abs(dragLeft - b.minX) <= this.epsilon ? b.minX : b.maxX;
-          } else if (Math.abs(dragRight - b.minX) <= this.epsilon || Math.abs(dragRight - b.maxX) <= this.epsilon) {
-            vFound = true;
-            vX = Math.abs(dragRight - b.minX) <= this.epsilon ? b.minX : b.maxX;
-          }
-        }
-        if (hFound && vFound) break;
-      }
+      // 直接复用 LogicFlow 原生的边缘检测方法（它们通过 getNodeBBox 正确获取节点尺寸）
+      var hInfo = this.getHorizontalSnapline(nodeData, nodes);
+      var vInfo = this.getVerticalSnapline(nodeData, nodes);
       return {
-        isShowHorizontal: hFound,
-        isShowVertical: vFound,
-        position: { x: vX, y: hY }
+        isShowHorizontal: hInfo.isShowHorizontal,
+        isShowVertical: vInfo.isShowVertical,
+        position: { x: vInfo.position.x, y: hInfo.position.y }
       };
     };
   })();
@@ -1059,6 +1028,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           '<div class="layui-form-item"><label class="layui-form-label">边框色</label><div class="layui-input-block"><div class="color-field" id="node-stroke-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">字体色</label><div class="layui-input-block"><div class="color-field" id="node-text-color"></div></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">边框样式</label><div class="layui-input-block"><select name="nodeStrokeDasharray" lay-filter="nodeStrokeDasharray"><option value=""' + (!props.strokeDasharray ? ' selected' : '') + '>实线</option><option value="5,5"' + (props.strokeDasharray === '5,5' ? ' selected' : '') + '>虚线</option></select></div></div>' +
+          '<div class="layui-form-item"><label class="layui-form-label">边框粗细</label><div class="layui-input-block"><select name="nodeStrokeWidth" lay-filter="nodeStrokeWidth"><option value="1"' + (props.strokeWidth == 1 ? ' selected' : '') + '>1 px</option><option value="2"' + (!props.strokeWidth || props.strokeWidth == 2 ? ' selected' : '') + '>2 px</option><option value="3"' + (props.strokeWidth == 3 ? ' selected' : '') + '>3 px</option><option value="4"' + (props.strokeWidth == 4 ? ' selected' : '') + '>4 px</option></select></div></div>' +
           '<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><select name="fontSize" lay-filter="fontSize"><option value="12"' + (curFontSize == 12 ? ' selected' : '') + '>12px</option><option value="14"' + (curFontSize == 14 ? ' selected' : '') + '>14px</option><option value="16"' + (curFontSize == 16 ? ' selected' : '') + '>16px</option><option value="18"' + (curFontSize == 18 ? ' selected' : '') + '>18px</option><option value="20"' + (curFontSize == 20 ? ' selected' : '') + '>20px</option><option value="24"' + (curFontSize == 24 ? ' selected' : '') + '>24px</option></select></div></div>' +
         '</div>' +
         '<div class="props-actions">' +
@@ -1074,6 +1044,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     // 边框样式实时同步
     form.on('select(nodeStrokeDasharray)', function (obj) {
       lf.setProperties(data.id, { strokeDasharray: obj.value });
+    });
+    // 边框粗细实时同步
+    form.on('select(nodeStrokeWidth)', function (obj) {
+      var val = parseInt(obj.value);
+      var nodeModel = lf.graphModel.getNodeModelById(data.id);
+      if (nodeModel) {
+        nodeModel.setProperties({ strokeWidth: val });
+      }
     });
     // 字体大小实时切换
     form.on('select(fontSize)', function (obj) {
