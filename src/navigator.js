@@ -59,7 +59,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     allowRotate: true,
     allowResize: true,
     snapline: true,
-    snaplineEpsilon: 5,
+    snaplineEpsilon: 10,
     plugins: LogicFlow.MiniMap ? [LogicFlow.MiniMap] : [],
     pluginsOptions: LogicFlow.MiniMap ? {
       miniMap: {
@@ -965,7 +965,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (!type) return;
     var clientX = lastMouseX || e.clientX, clientY = lastMouseY || e.clientY;
     var point = lf.getPointByClient(clientX, clientY);
-    var x = point.canvasOverlayPosition.x, y = point.canvasOverlayPosition.y;
+    // 吸附到最近网格点（grid size = 10）
+    var x = Math.round(point.canvasOverlayPosition.x / 10) * 10;
+    var y = Math.round(point.canvasOverlayPosition.y / 10) * 10;
     var textMap = {
       'rect': '矩形', 'oblong': '长方形', 'sharp-rect': '直角长方形', 'round-rect': '圆角长方形',
       'document': '文档', 'subprocess': '子流程', 'internal-storage': '内部存储',
