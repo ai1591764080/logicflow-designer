@@ -955,6 +955,39 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       if (draggingNode) {
         draggingNode.moveTo(x, y);
         lf.setNodeSnapLine(draggingNode.getData());
+        // 磁吸对齐：对齐线亮起时吸附到精确位置
+        var sm = lf.snaplineModel;
+        if (sm && (sm.isShowHorizontal || sm.isShowVertical)) {
+          var snapX = x, snapY = y;
+          if (sm.isShowVertical) {
+            var w = draggingNode.width;
+            var leftX = draggingNode.x - w / 2;
+            var rightX = draggingNode.x + w / 2;
+            if (Math.abs(leftX - sm.position.x) < sm.epsilon) {
+              snapX = sm.position.x + w / 2;
+            } else if (Math.abs(rightX - sm.position.x) < sm.epsilon) {
+              snapX = sm.position.x - w / 2;
+            } else {
+              snapX = sm.position.x;
+            }
+          }
+          if (sm.isShowHorizontal) {
+            var h = draggingNode.height;
+            var topY = draggingNode.y - h / 2;
+            var bottomY = draggingNode.y + h / 2;
+            if (Math.abs(topY - sm.position.y) < sm.epsilon) {
+              snapY = sm.position.y + h / 2;
+            } else if (Math.abs(bottomY - sm.position.y) < sm.epsilon) {
+              snapY = sm.position.y - h / 2;
+            } else {
+              snapY = sm.position.y;
+            }
+          }
+          if (snapX !== x || snapY !== y) {
+            draggingNode.moveTo(snapX, snapY);
+            lf.setNodeSnapLine(draggingNode.getData());
+          }
+        }
       }
     }
   });
@@ -964,10 +997,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var type = e.dataTransfer.getData('type');
     if (!type) return;
     var clientX = lastMouseX || e.clientX, clientY = lastMouseY || e.clientY;
-    var point = lf.getPointByClient(clientX, clientY);
-    // 吸附到最近网格点（grid size = 10）
-    var x = Math.round(point.canvasOverlayPosition.x / 10) * 10;
-    var y = Math.round(point.canvasOverlayPosition.y / 10) * 10;
+    var x, y;
+    // 使用假节点的对齐位置（磁吸后已吸附到精确位置）
+    if (draggingNode) {
+      x = draggingNode.x;
+      y = draggingNode.y;
+    } else {
+      var point = lf.getPointByClient(clientX, clientY);
+      x = point.canvasOverlayPosition.x;
+      y = point.canvasOverlayPosition.y;
+    }
     var textMap = {
       'rect': '矩形', 'oblong': '长方形', 'sharp-rect': '直角长方形', 'round-rect': '圆角长方形',
       'document': '文档', 'subprocess': '子流程', 'internal-storage': '内部存储',
