@@ -632,7 +632,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                         var snapY = topY + dragH / 2;
                         if (Math.abs(snapY - y) > 1) {
                             draggingNode.moveTo(draggingNode.x, snapY);
-                            lf.setNodeSnapLine(draggingNode.getData());
                         }
                     }
                     if (leftFound) {
@@ -642,7 +641,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                         var snapX = leftX + dragW / 2;
                         if (Math.abs(snapX - x) > 1) {
                             draggingNode.moveTo(snapX, draggingNode.y);
-                            lf.setNodeSnapLine(draggingNode.getData());
                         }
                     }
                 }
