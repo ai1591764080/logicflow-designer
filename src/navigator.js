@@ -80,7 +80,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     snapline: { stroke: '#555555', strokeWidth: 1, strokeDasharray: '3,3' }
   });
 
-  // 全局拦截：禁用中心对齐，仅保留顶部+左侧边缘对齐（覆盖内部拖拽和外部DnD）
+  // 全局拦截：禁用中心对齐，仅保留上下左右边缘对齐（覆盖内部拖拽和外部DnD）
   (function() {
     var _orig = lf.snaplineModel.setNodeSnapLine.bind(lf.snaplineModel);
     lf.snaplineModel.setNodeSnapLine = function(nodeData) {
@@ -90,26 +90,40 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       sm.isShowVertical = false;
       var dragW = nodeData.width || 80, dragH = nodeData.height || 60;
       var dragTop = nodeData.y - dragH / 2;
+      var dragBottom = nodeData.y + dragH / 2;
       var dragLeft = nodeData.x - dragW / 2;
+      var dragRight = nodeData.x + dragW / 2;
       var nodes = lf.graphModel.nodes;
-      var topFound = false, topY = 0;
-      var leftFound = false, leftX = 0;
+      var hFound = false, hY = 0;
+      var vFound = false, vX = 0;
       for (var i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         if (n.id === nodeData.id) continue;
         var b = { minX: n.x - n.width / 2, maxX: n.x + n.width / 2, minY: n.y - n.height / 2, maxY: n.y + n.height / 2 };
-        if (!topFound && (Math.abs(dragTop - b.minY) <= sm.epsilon || Math.abs(dragTop - b.maxY) <= sm.epsilon)) {
-          topFound = true;
-          topY = Math.abs(dragTop - b.minY) <= sm.epsilon ? b.minY : b.maxY;
+        // 水平对齐：拖拽节点顶部/底部 vs 其他节点顶部/底部
+        if (!hFound) {
+          if (Math.abs(dragTop - b.minY) <= sm.epsilon || Math.abs(dragTop - b.maxY) <= sm.epsilon) {
+            hFound = true;
+            hY = Math.abs(dragTop - b.minY) <= sm.epsilon ? b.minY : b.maxY;
+          } else if (Math.abs(dragBottom - b.minY) <= sm.epsilon || Math.abs(dragBottom - b.maxY) <= sm.epsilon) {
+            hFound = true;
+            hY = Math.abs(dragBottom - b.minY) <= sm.epsilon ? b.minY : b.maxY;
+          }
         }
-        if (!leftFound && (Math.abs(dragLeft - b.minX) <= sm.epsilon || Math.abs(dragLeft - b.maxX) <= sm.epsilon)) {
-          leftFound = true;
-          leftX = Math.abs(dragLeft - b.minX) <= sm.epsilon ? b.minX : b.maxX;
+        // 垂直对齐：拖拽节点左侧/右侧 vs 其他节点左侧/右侧
+        if (!vFound) {
+          if (Math.abs(dragLeft - b.minX) <= sm.epsilon || Math.abs(dragLeft - b.maxX) <= sm.epsilon) {
+            vFound = true;
+            vX = Math.abs(dragLeft - b.minX) <= sm.epsilon ? b.minX : b.maxX;
+          } else if (Math.abs(dragRight - b.minX) <= sm.epsilon || Math.abs(dragRight - b.maxX) <= sm.epsilon) {
+            vFound = true;
+            vX = Math.abs(dragRight - b.minX) <= sm.epsilon ? b.minX : b.maxX;
+          }
         }
-        if (topFound && leftFound) break;
+        if (hFound && vFound) break;
       }
-      if (topFound) { sm.isShowHorizontal = true; sm.position.y = topY; }
-      if (leftFound) { sm.isShowVertical = true; sm.position.x = leftX; }
+      if (hFound) { sm.isShowHorizontal = true; sm.position.y = hY; }
+      if (vFound) { sm.isShowVertical = true; sm.position.x = vX; }
     };
   })();
 
@@ -934,16 +948,34 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       if (draggingNode) {
         draggingNode.moveTo(x, y);
         lf.setNodeSnapLine(draggingNode.getData());
-        // 磁吸：对齐线亮起时修正假节点位置
+        // 磁吸：对齐线亮起时修正假节点位置（区分上下左右边缘）
         var sm = lf.snaplineModel;
         if (sm) {
           var dragH = draggingNode.height, dragW = draggingNode.width;
           if (sm.isShowHorizontal) {
-            var snapY = sm.position.y + dragH / 2;
+            var topY2 = draggingNode.y - dragH / 2;
+            var bottomY2 = draggingNode.y + dragH / 2;
+            var snapY;
+            if (Math.abs(topY2 - sm.position.y) < sm.epsilon) {
+              snapY = sm.position.y + dragH / 2;  // 顶部对齐
+            } else if (Math.abs(bottomY2 - sm.position.y) < sm.epsilon) {
+              snapY = sm.position.y - dragH / 2;  // 底部对齐
+            } else {
+              snapY = sm.position.y;
+            }
             if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); }
           }
           if (sm.isShowVertical) {
-            var snapX = sm.position.x + dragW / 2;
+            var leftX2 = draggingNode.x - dragW / 2;
+            var rightX2 = draggingNode.x + dragW / 2;
+            var snapX;
+            if (Math.abs(leftX2 - sm.position.x) < sm.epsilon) {
+              snapX = sm.position.x + dragW / 2;  // 左侧对齐
+            } else if (Math.abs(rightX2 - sm.position.x) < sm.epsilon) {
+              snapX = sm.position.x - dragW / 2;  // 右侧对齐
+            } else {
+              snapX = sm.position.x;
+            }
             if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); }
           }
         }
