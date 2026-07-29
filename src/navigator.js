@@ -955,17 +955,60 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       if (draggingNode) {
         draggingNode.moveTo(x, y);
         lf.setNodeSnapLine(draggingNode.getData());
-        // 磁吸对齐：对齐线亮起时吸附到精确位置
         var sm = lf.snaplineModel;
+        // 自定义顶部对齐检测（优先于中心对齐）
+        if (sm) {
+          var dragH = draggingNode.height, dragW = draggingNode.width;
+          var dragTop = draggingNode.y - dragH / 2;
+          var dragBottom = draggingNode.y + dragH / 2;
+          var dragLeft = draggingNode.x - dragW / 2;
+          var dragRight = draggingNode.x + dragW / 2;
+          var allNodes = lf.graphModel.nodes;
+          var topFound = false, topY = 0;
+          var leftFound = false, leftX = 0;
+          for (var ni = 0; ni < allNodes.length; ni++) {
+            var node = allNodes[ni];
+            if (node.id === draggingNode.id) continue;
+            var bbox = {
+              minX: node.x - node.width / 2,
+              maxX: node.x + node.width / 2,
+              minY: node.y - node.height / 2,
+              maxY: node.y + node.height / 2
+            };
+            // 顶部对齐：拖拽节点顶部 vs 其他节点顶部 / 拖拽节点顶部 vs 其他节点底部
+            if (!topFound && (Math.abs(dragTop - bbox.minY) <= sm.epsilon || Math.abs(dragTop - bbox.maxY) <= sm.epsilon)) {
+              topFound = true;
+              topY = Math.abs(dragTop - bbox.minY) <= sm.epsilon ? bbox.minY : bbox.maxY;
+            }
+            // 左侧对齐：拖拽节点左侧 vs 其他节点左侧 / 拖拽节点左侧 vs 其他节点右侧
+            if (!leftFound && (Math.abs(dragLeft - bbox.minX) <= sm.epsilon || Math.abs(dragLeft - bbox.maxX) <= sm.epsilon)) {
+              leftFound = true;
+              leftX = Math.abs(dragLeft - bbox.minX) <= sm.epsilon ? bbox.minX : bbox.maxX;
+            }
+            if (topFound && leftFound) break;
+          }
+          // 覆盖水平对齐线到顶部
+          if (topFound) {
+            sm.isShowHorizontal = true;
+            sm.position.y = topY;
+          }
+          // 覆盖垂直对齐线到左侧
+          if (leftFound) {
+            sm.isShowVertical = true;
+            sm.position.x = leftX;
+          }
+        }
+        // 磁吸对齐：对齐线亮起时吸附到精确位置
         if (sm && (sm.isShowHorizontal || sm.isShowVertical)) {
           var snapX = x, snapY = y;
           if (sm.isShowVertical) {
             var w = draggingNode.width;
-            var leftX = draggingNode.x - w / 2;
-            var rightX = draggingNode.x + w / 2;
-            if (Math.abs(leftX - sm.position.x) < sm.epsilon) {
+            var leftX2 = draggingNode.x - w / 2;
+            var rightX2 = draggingNode.x + w / 2;
+            var epsX = sm.epsilon;
+            if (Math.abs(leftX2 - sm.position.x) < epsX) {
               snapX = sm.position.x + w / 2;
-            } else if (Math.abs(rightX - sm.position.x) < sm.epsilon) {
+            } else if (Math.abs(rightX2 - sm.position.x) < epsX) {
               snapX = sm.position.x - w / 2;
             } else {
               snapX = sm.position.x;
@@ -973,11 +1016,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           }
           if (sm.isShowHorizontal) {
             var h = draggingNode.height;
-            var topY = draggingNode.y - h / 2;
-            var bottomY = draggingNode.y + h / 2;
-            if (Math.abs(topY - sm.position.y) < sm.epsilon) {
+            var topY2 = draggingNode.y - h / 2;
+            var bottomY2 = draggingNode.y + h / 2;
+            var epsY = sm.epsilon;
+            if (Math.abs(topY2 - sm.position.y) < epsY) {
               snapY = sm.position.y + h / 2;
-            } else if (Math.abs(bottomY - sm.position.y) < sm.epsilon) {
+            } else if (Math.abs(bottomY2 - sm.position.y) < epsY) {
               snapY = sm.position.y - h / 2;
             } else {
               snapY = sm.position.y;
