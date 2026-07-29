@@ -1219,6 +1219,18 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   lf.on('node:delete', function () { clearPanel(); updateEmptyState(); });
   lf.on('edge:delete', function () { clearPanel(); updateEmptyState(); });
 
+  // 复制粘贴/拖拽添加节点后，自动将属性面板切换到新节点
+  lf.on('node:dnd-add', function (arg) {
+    if (currentMode === 'design') {
+      renderNodePanel(arg.data);
+    }
+  });
+  lf.on('node:add', function (arg) {
+    if (currentMode === 'design') {
+      renderNodePanel(arg.data);
+    }
+  });
+
   // 点击节点文字时也显示属性面板（文字层可能拦截了 node:click 事件）
   var graphContainer = document.getElementById('graph');
   if (graphContainer) {

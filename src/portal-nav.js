@@ -833,6 +833,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     lf.on('blank:click', function () { renderBlankPanel(); });
     lf.on('node:delete', function () { clearPanel(); updateEmptyState(); });
     lf.on('edge:delete', function () { clearPanel(); updateEmptyState(); });
+    // 拖拽添加/复制粘贴节点后，自动将属性面板切换到新节点
+    lf.on('node:dnd-add', function (arg) {
+        renderNodePanel(arg.data);
+    });
+    lf.on('node:add', function (arg) {
+        renderNodePanel(arg.data);
+    });
     // 点击节点文字时也显示属性面板（文字层可能拦截了 node:click 事件）
     var graphContainer = document.getElementById('graph');
     if (graphContainer) {
