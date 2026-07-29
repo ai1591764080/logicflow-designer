@@ -59,6 +59,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     allowRotate: true,
     allowResize: true,
     snapline: true,
+    snaplineEpsilon: 5,
     plugins: LogicFlow.MiniMap ? [LogicFlow.MiniMap] : [],
     pluginsOptions: LogicFlow.MiniMap ? {
       miniMap: {

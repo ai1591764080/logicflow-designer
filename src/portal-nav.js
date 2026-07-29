@@ -64,6 +64,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                 rightPosition: 300, topPosition: 250
             }
         } : {},
+        snapline: true,
+        snaplineEpsilon: 5,
     });
     lf.updateEditConfig({ hoverOutline: false, edgeSelectedOutline: false });
 
