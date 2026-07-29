@@ -80,6 +80,39 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     snapline: { stroke: '#555555', strokeWidth: 1, strokeDasharray: '3,3' }
   });
 
+  // 全局拦截：禁用中心对齐，仅保留顶部+左侧边缘对齐（覆盖内部拖拽和外部DnD）
+  (function() {
+    var _orig = lf.snaplineModel.setNodeSnapLine.bind(lf.snaplineModel);
+    lf.snaplineModel.setNodeSnapLine = function(nodeData) {
+      _orig(nodeData);
+      var sm = lf.snaplineModel;
+      sm.isShowHorizontal = false;
+      sm.isShowVertical = false;
+      var dragW = nodeData.width || 80, dragH = nodeData.height || 60;
+      var dragTop = nodeData.y - dragH / 2;
+      var dragLeft = nodeData.x - dragW / 2;
+      var nodes = lf.graphModel.nodes;
+      var topFound = false, topY = 0;
+      var leftFound = false, leftX = 0;
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        if (n.id === nodeData.id) continue;
+        var b = { minX: n.x - n.width / 2, maxX: n.x + n.width / 2, minY: n.y - n.height / 2, maxY: n.y + n.height / 2 };
+        if (!topFound && (Math.abs(dragTop - b.minY) <= sm.epsilon || Math.abs(dragTop - b.maxY) <= sm.epsilon)) {
+          topFound = true;
+          topY = Math.abs(dragTop - b.minY) <= sm.epsilon ? b.minY : b.maxY;
+        }
+        if (!leftFound && (Math.abs(dragLeft - b.minX) <= sm.epsilon || Math.abs(dragLeft - b.maxX) <= sm.epsilon)) {
+          leftFound = true;
+          leftX = Math.abs(dragLeft - b.minX) <= sm.epsilon ? b.minX : b.maxX;
+        }
+        if (topFound && leftFound) break;
+      }
+      if (topFound) { sm.isShowHorizontal = true; sm.position.y = topY; }
+      if (leftFound) { sm.isShowVertical = true; sm.position.x = leftX; }
+    };
+  })();
+
   // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
     initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 80; this.height = (data.properties && data.properties.height) || 60; }
@@ -952,57 +985,21 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           properties: {}
         });
       }
-      // 更新假节点位置与吸附线（仅顶部+左侧对齐，无中心对齐）
+      // 更新假节点位置与吸附线（全局拦截已处理对齐策略）
       if (draggingNode) {
         draggingNode.moveTo(x, y);
         lf.setNodeSnapLine(draggingNode.getData());
+        // 磁吸：对齐线亮起时修正假节点位置
         var sm = lf.snaplineModel;
-        // 禁用中心对齐，只做顶部/左侧边缘检测
         if (sm) {
-          sm.isShowHorizontal = false;
-          sm.isShowVertical = false;
           var dragH = draggingNode.height, dragW = draggingNode.width;
-          var dragTop = draggingNode.y - dragH / 2;
-          var dragLeft = draggingNode.x - dragW / 2;
-          var allNodes = lf.graphModel.nodes;
-          var topFound = false, topY = 0;
-          var leftFound = false, leftX = 0;
-          for (var ni = 0; ni < allNodes.length; ni++) {
-            var node = allNodes[ni];
-            if (node.id === draggingNode.id) continue;
-            var bbox = {
-              minX: node.x - node.width / 2,
-              maxX: node.x + node.width / 2,
-              minY: node.y - node.height / 2,
-              maxY: node.y + node.height / 2
-            };
-            if (!topFound && (Math.abs(dragTop - bbox.minY) <= sm.epsilon || Math.abs(dragTop - bbox.maxY) <= sm.epsilon)) {
-              topFound = true;
-              topY = Math.abs(dragTop - bbox.minY) <= sm.epsilon ? bbox.minY : bbox.maxY;
-            }
-            if (!leftFound && (Math.abs(dragLeft - bbox.minX) <= sm.epsilon || Math.abs(dragLeft - bbox.maxX) <= sm.epsilon)) {
-              leftFound = true;
-              leftX = Math.abs(dragLeft - bbox.minX) <= sm.epsilon ? bbox.minX : bbox.maxX;
-            }
-            if (topFound && leftFound) break;
+          if (sm.isShowHorizontal) {
+            var snapY = sm.position.y + dragH / 2;
+            if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); }
           }
-          if (topFound) {
-            sm.isShowHorizontal = true;
-            sm.position.y = topY;
-            // 磁吸：顶部对齐 → 修正节点中心Y
-            var snapY = topY + dragH / 2;
-            if (Math.abs(snapY - y) > 1) {
-              draggingNode.moveTo(draggingNode.x, snapY);
-            }
-          }
-          if (leftFound) {
-            sm.isShowVertical = true;
-            sm.position.x = leftX;
-            // 磁吸：左侧对齐 → 修正节点中心X
-            var snapX = leftX + dragW / 2;
-            if (Math.abs(snapX - x) > 1) {
-              draggingNode.moveTo(snapX, draggingNode.y);
-            }
+          if (sm.isShowVertical) {
+            var snapX = sm.position.x + dragW / 2;
+            if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); }
           }
         }
       }
