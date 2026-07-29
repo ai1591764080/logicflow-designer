@@ -631,7 +631,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       '<input type="text" class="nav-group-input layui-input" ModuleGroupId="' + groupId + '" value="' + groupName + '" placeholder="请输入分组名">' +
       '<span class="g-role-label">角色：</span>' +
       buildRoleSelectorHtml(groupId) +
-      '<span class="nav-group-delete" title="删除分组"><i class="layui-icon layui-icon-delete"></i></span>' +
       '</div>';
   }
 
@@ -653,8 +652,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     '.nav-group-drag:hover .nav-dot-grid i { background: #1e9fff; }' +
     '.nav-group-input { flex: 1; border: none !important; background: transparent !important; font-size: 13px; padding: 4px 6px !important; min-width: 0; }' +
     '.nav-group-input:focus { outline: none; background: #fff !important; border: 1px solid #1e9fff !important; border-radius: 4px; }' +
-    '.nav-group-delete { cursor: pointer; color: #ccc; font-size: 18px; display: flex; align-items: center; flex-shrink: 0; transition: color 0.2s; }' +
-    '.nav-group-delete:hover { color: #ff4d4f; }' +
+
     '.g-role-label { font-size: 12px; color: #666; flex-shrink: 0; white-space: nowrap; }' +
     // 角色选择器样式
     '.g-role-selector { position: relative; flex-shrink: 0; }' +
@@ -679,12 +677,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       html += "<div class='navigatorSearch'>";
       html += '<input type="text" id="navigatorInput" class="layui-input" maxlength="120" autocomplete="off" placeholder="请输入新分组名称">';
       html += '<input type="button" id="navigatorAdd" class="layui-btn layui-btn-sm layui-btn-normal" value="添加">';
+      html += '<input type="button" id="navigatorDelete" class="layui-btn layui-btn-sm layui-btn-danger" value="删除分组">';
       html += '</div>';
       html += "<div class='navigatorBody'>";
       for (var i = 0; i < _groupList.length; i++) {
         html += buildGroupItemHtml(_groupList[i].ModuleGroupId, _groupList[i].ModuleGroupName);
       }
-      html += '</div></div>';
+      html += '</div>';
+      html += '</div>';
 
       layer.open({
         type: 1, title: '设置分组', content: html, area: ['450px', '520px'], btn: ['保存', '取消'],
@@ -721,6 +721,18 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           var $navigatorInput = $navigatorGroup.find('#navigatorInput');
           var $navigatorAdd = $navigatorGroup.find('#navigatorAdd');
           var $navigatorBody = $navigatorGroup.find('.navigatorBody');
+          var $btnDelete = $navigatorGroup.find('#navigatorDelete');
+
+          // 更新删除按钮状态（仅剩一个分组时禁用）
+          function updateDeleteBtnState() {
+            var count = $navigatorBody.find('.nav-group-item').length;
+            if (count <= 1) {
+              $btnDelete.prop('disabled', true).addClass('layui-btn-disabled');
+            } else {
+              $btnDelete.prop('disabled', false).removeClass('layui-btn-disabled');
+            }
+          }
+          updateDeleteBtnState();
 
           // 角色按钮点击展开/收起
           $navigatorBody.on('click', '.g-role-btn', function (e) {
@@ -778,6 +790,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             $navigatorBody.append(buildGroupItemHtml(nId, val));
             $navigatorInput.val('');
             $navigatorBody.scrollTop($navigatorBody[0].scrollHeight);
+            updateDeleteBtnState();
           });
 
           // 回车添加
@@ -785,13 +798,29 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             if (e.keyCode === 13) $navigatorAdd.click();
           });
 
-          // 删除分组（带确认弹窗）
-          $navigatorBody.on('click', '.nav-group-delete', function () {
-            var $item = $(this).closest('.nav-group-item');
-            var name = $item.find('.nav-group-input').val() || '该分组';
+          // 删除按钮（删除当前展示分组，并切换到下一个分组）
+          $navigatorGroup.find('#navigatorDelete').on('click', function () {
+            if (!currentGroupId) { layer.msg('当前没有展示分组', { icon: 0 }); return; }
+            var $target = $navigatorBody.find('.nav-group-item[data-id="' + currentGroupId + '"]');
+            if ($target.length === 0) { layer.msg('当前展示分组不在列表中', { icon: 0 }); return; }
+            var name = $target.find('.nav-group-input').val() || '该分组';
             layer.confirm('删除将同时删除当前组导数据，确定删除该分组【' + name + '】吗？', { icon: 3, title: '删除确认' }, function (index) {
               layer.close(index);
-              $item.slideUp(200, function () { $item.remove(); });
+              // 找到下一个分组
+              var $next = $target.next('.nav-group-item');
+              if ($next.length === 0) $next = $target.prev('.nav-group-item');
+              var nextGroupId = $next.length > 0 ? $next.attr('data-id') : null;
+              $target.slideUp(200, function () {
+                $target.remove();
+                updateDeleteBtnState();
+                // 切换到下一个分组
+                if (nextGroupId) {
+                  currentGroupId = nextGroupId;
+                  var selectEl = document.getElementById('group-select');
+                  if (selectEl) selectEl.value = nextGroupId;
+                  loadGroupFlow(nextGroupId);
+                }
+              });
             });
           });
 
