@@ -888,52 +888,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     'oblong': { w: 120, h: 40 }, 'sharp-rect': { w: 120, h: 55 }, 'round-rect': { w: 120, h: 55 },
     'document': { w: 110, h: 65 }, 'subprocess': { w: 120, h: 55 }, 'internal-storage': { w: 120, h: 55 }
   };
-  // 在 Canvas 上绘制节点形状（用于拖拽预览）
-  function drawNodeShape(ctx, type, w, h) {
-    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#666666'; ctx.lineWidth = 2;
-    switch (type) {
-      case 'circle':
-        ctx.beginPath(); ctx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 1, 0, Math.PI * 2);
-        ctx.fill(); ctx.stroke(); break;
-      case 'diamond':
-        ctx.beginPath(); ctx.moveTo(w / 2, 1); ctx.lineTo(w - 1, h / 2);
-        ctx.lineTo(w / 2, h - 1); ctx.lineTo(1, h / 2); ctx.closePath();
-        ctx.fill(); ctx.stroke(); break;
-      case 'round-rect':
-        drawRoundRect(ctx, 0, 0, w, h, 25); ctx.fill(); ctx.stroke(); break;
-      case 'oblong':
-        drawRoundRect(ctx, 0, 0, w, h, 4); ctx.fill(); ctx.stroke(); break;
-      case 'sharp-rect':
-        ctx.fillRect(1, 1, w - 2, h - 2); ctx.strokeRect(1, 1, w - 2, h - 2); break;
-      case 'document':
-        var amp = h * 0.15;
-        ctx.beginPath(); ctx.moveTo(1, 1); ctx.lineTo(w - 1, 1);
-        ctx.lineTo(w - 1, h - 1);
-        ctx.bezierCurveTo(w * 0.75, h - 1 - amp, w * 0.58, h - 1 - amp, w / 2, h - 1);
-        ctx.bezierCurveTo(w * 0.42, h - 1 + amp, w * 0.25, h - 1 + amp, 1, h - 1);
-        ctx.closePath(); ctx.fill(); ctx.stroke(); break;
-      case 'subprocess':
-        ctx.fillRect(1, 1, w - 2, h - 2); ctx.strokeRect(1, 1, w - 2, h - 2);
-        var lo = w * (20 / 120);
-        ctx.beginPath(); ctx.moveTo(lo, 1); ctx.lineTo(lo, h - 1); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(w - lo, 1); ctx.lineTo(w - lo, h - 1); ctx.stroke(); break;
-      case 'internal-storage':
-        ctx.fillRect(1, 1, w - 2, h - 2); ctx.strokeRect(1, 1, w - 2, h - 2);
-        var ty = h * (15 / 55), lx = w * (20 / 120);
-        ctx.beginPath(); ctx.moveTo(1, ty); ctx.lineTo(w - 1, ty); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(lx, 1); ctx.lineTo(lx, h - 1); ctx.stroke(); break;
-      default:
-        ctx.fillRect(1, 1, w - 2, h - 2); ctx.strokeRect(1, 1, w - 2, h - 2);
-    }
-  }
-  function drawRoundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
-  }
-  // 拖拽时使用实际节点尺寸作为拖影
+  // 拖拽预览已改为透明图片，画布上的假节点提供视觉反馈
   var draggingType = '';
   var draggingNode = null;
   document.querySelectorAll('.node-item').forEach(function (item) {
@@ -941,20 +896,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var type = this.getAttribute('data-type');
       e.dataTransfer.setData('type', type);
       draggingType = type;
-      var size = nodeActualSizes[type];
-      if (!size) return;
-      var dpr = window.devicePixelRatio || 1;
-      var canvas = document.createElement('canvas');
-      canvas.width = size.w * dpr; canvas.height = size.h * dpr;
-      canvas.style.width = size.w + 'px'; canvas.style.height = size.h + 'px';
-      canvas.style.opacity = '0.7'; canvas.style.position = 'fixed';
-      canvas.style.left = '-9999px'; canvas.style.top = '-9999px';
-      document.body.appendChild(canvas);
-      var ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-      drawNodeShape(ctx, type, size.w, size.h);
-      e.dataTransfer.setDragImage(canvas, size.w / 2, size.h / 2);
-      setTimeout(function () { document.body.removeChild(canvas); }, 0);
+      // 用透明图片隐藏浏览器默认拖拽幽灵图（画布上的假节点已提供视觉反馈）
+      var img = new Image();
+      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      e.dataTransfer.setDragImage(img, 0, 0);
     });
     item.addEventListener('dragend', function () {
       draggingType = '';
