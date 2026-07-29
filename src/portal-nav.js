@@ -83,7 +83,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             strokeWidth: 0,      // 箭头边框粗细
             strokeLinecap: 'square',    // 平直末端（'round'圆头, 'square'方头）
             strokeLinejoin: 'round'   // 尖角连接（'round'圆角, 'bevel'斜角）
-        }
+        },
+        snapline: { stroke: '#555555', strokeWidth: 1, strokeDasharray: '3,3' }
     });
 
     // ========== 注册基础图形节点类型（无流程节点） ==========
