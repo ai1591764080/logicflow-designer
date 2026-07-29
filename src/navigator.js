@@ -716,7 +716,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             }
           });
         },
-        success: function (layero) {
+        success: function (layero, layerIndex) {
           var $navigatorGroup = $(layero).find('.navigatorGroup');
           var $navigatorInput = $navigatorGroup.find('#navigatorInput');
           var $navigatorAdd = $navigatorGroup.find('#navigatorAdd');
@@ -821,6 +821,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                   if (selectEl) selectEl.value = nextGroupId;
                   loadGroupFlow(nextGroupId);
                 }
+                // 关闭设置弹窗
+                layer.close(layerIndex);
               });
             });
           });
