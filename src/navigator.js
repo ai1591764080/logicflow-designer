@@ -801,7 +801,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
           // 删除按钮（删除当前展示分组，并切换到下一个分组）
           $navigatorGroup.find('#navigatorDelete').on('click', function () {
             if (!currentGroupId) { layer.msg('当前没有展示分组', { icon: 0 }); return; }
-            var $target = $navigatorBody.find('.nav-group-item[data-id="' + currentGroupId + '"]');
+            var $items = $navigatorBody.find('.nav-group-item');
+            var $target = $items.filter(function () { return String($(this).attr('data-id')) === String(currentGroupId); });
             if ($target.length === 0) { layer.msg('当前展示分组不在列表中', { icon: 0 }); return; }
             var name = $target.find('.nav-group-input').val() || '该分组';
             layer.confirm('删除将同时删除当前组导数据，确定删除该分组【' + name + '】吗？', { icon: 3, title: '删除确认' }, function (index) {
