@@ -471,6 +471,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                     try {
                         var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
                         lf.render(data);
+                        // 恢复保存的画布平移位置（但不恢复缩放，始终保持 100%）
+                        if (data.transform) {
+                            var tm = lf.graphModel.transformModel;
+                            tm.TRANSLATE_X = data.transform.TRANSLATE_X;
+                            tm.TRANSLATE_Y = data.transform.TRANSLATE_Y;
+                            tm.emitGraphTransform('zoom');
+                        }
                     } catch (e) {
                         lf.render({ nodes: [], edges: [] });
                     }
