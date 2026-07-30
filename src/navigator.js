@@ -343,16 +343,24 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
   // 内部节点拖拽：多线视觉 + 磁吸对齐
+  var _wpsDraggingNodeId = null; // 追踪当前正在拖拽的节点
+
+  lf.on('node:dragstart', function (_a) {
+    if (currentMode !== 'design') return;
+    _wpsDraggingNodeId = _a.data.id;
+  });
+
   lf.on('node:mousemove', function (_a) {
     var data = _a.data;
     if (currentMode !== 'design') return;
+    // 只在真正拖拽时才执行对齐逻辑，避免干扰正常悬停/点击
+    if (_wpsDraggingNodeId !== data.id) return;
     var nodeModel = lf.graphModel.getNodeModelById(data.id);
     if (!nodeModel) return;
     var bbox = wpsGetNodeBBox(nodeModel);
     var w = bbox.width, h = bbox.height;
 
-    // 关键：先将节点移到鼠标位置，确保原生 snapline 检测始终基于鼠标坐标
-    // 而非上次磁吸后的位置，彻底消除反馈循环导致的摆动
+    // 先将节点移到鼠标位置，确保原生 snapline 检测始终基于鼠标坐标
     lf.graphModel.moveNode2Coordinate(data.id, data.x, data.y);
 
     var nd = { id: data.id, x: data.x, y: data.y, width: w, height: h };
@@ -373,8 +381,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   });
 
-  lf.on('node:mouseup', function () { wpsHideSnapline(); });
-  lf.on('node:drop', function () { wpsHideSnapline(); });
+  lf.on('node:mouseup', function () { _wpsDraggingNodeId = null; wpsHideSnapline(); });
+  lf.on('node:drop', function () { _wpsDraggingNodeId = null; wpsHideSnapline(); });
+  lf.on('node:mouseleave', function () { if (!_wpsDraggingNodeId) wpsHideSnapline(); });
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
