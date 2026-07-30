@@ -215,16 +215,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (node && typeof node.getNodeBBox === 'function') {
       try {
         var bbox = node.getNodeBBox();
-        // 圆形/菱形：确保 bbox 尺寸与 r/rx/ry 一致（防止 width/height 与半径不同步）
+        // 圆形/菱形：直接用 r/rx/ry 计算 bbox（getNodeBBox 可能包含文本等额外空间）
         var type = node.type || '';
         if (type === 'circle' && node.r) {
           var r = node.r;
-          bbox.width = Math.max(bbox.width || 0, r * 2);
-          bbox.height = Math.max(bbox.height || 0, r * 2);
+          bbox.width = r * 2;
+          bbox.height = r * 2;
         } else if (type === 'diamond') {
           var rx = node.rx || 40, ry = node.ry || 40;
-          bbox.width = Math.max(bbox.width || 0, rx * 2);
-          bbox.height = Math.max(bbox.height || 0, ry * 2);
+          bbox.width = rx * 2;
+          bbox.height = ry * 2;
         }
         return bbox;
       } catch (e) {}
