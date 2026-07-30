@@ -93,6 +93,56 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (e.deltaY < 0) { lf.zoom(true); } else { lf.zoom(false); }
     }, { passive: false });
 
+    // ========== 内部节点拖拽磁吸对齐（WPS 流程图风格） ==========
+    lf.on('node:mousemove', function (_a) {
+        var data = _a.data;
+        var sm = lf.snaplineModel;
+        if (!sm) return;
+        var nodeModel = lf.graphModel.getNodeModelById(data.id);
+        if (!nodeModel) return;
+        var x = nodeModel.x, y = nodeModel.y;
+        var w = nodeModel.width, h = nodeModel.height;
+        var snapX = x, snapY = y;
+        var needsSnap = false;
+
+        // 水平方向磁吸：中心对齐 / 顶部边缘对齐 / 底部边缘对齐
+        if (sm.isShowHorizontal) {
+            needsSnap = true;
+            var topEdge = y - h / 2;
+            var bottomEdge = y + h / 2;
+            var targetY = sm.position.y;
+            if (Math.abs(topEdge - targetY) < sm.epsilon) {
+                snapY = targetY + h / 2;   // 顶部对齐 → 向下咬合
+            } else if (Math.abs(bottomEdge - targetY) < sm.epsilon) {
+                snapY = targetY - h / 2;   // 底部对齐 → 向上咬合
+            } else {
+                snapY = targetY;            // 中心对齐
+            }
+        }
+
+        // 垂直方向磁吸：中心对齐 / 左侧边缘对齐 / 右侧边缘对齐
+        if (sm.isShowVertical) {
+            needsSnap = true;
+            var leftEdge = x - w / 2;
+            var rightEdge = x + w / 2;
+            var targetX = sm.position.x;
+            if (Math.abs(leftEdge - targetX) < sm.epsilon) {
+                snapX = targetX + w / 2;   // 左侧对齐 → 向右咬合
+            } else if (Math.abs(rightEdge - targetX) < sm.epsilon) {
+                snapX = targetX - w / 2;   // 右侧对齐 → 向左咬合
+            } else {
+                snapX = targetX;            // 中心对齐
+            }
+        }
+
+        if (needsSnap && (snapX !== x || snapY !== y)) {
+            lf.graphModel.moveNode2Coordinate(data.id, snapX, snapY);
+            // 咬合后刷新对齐线，确保视觉与位置一致
+            var updatedData = nodeModel.getData();
+            lf.setNodeSnapLine(updatedData);
+        }
+    });
+
     // ========== 注册基础图形节点类型（无流程节点） ==========
     class BaseRectModel extends RectNodeModel {
         initNodeData(data) { super.initNodeData(data); this.width = (data.properties && data.properties.width) || 80; this.height = (data.properties && data.properties.height) || 60; }
@@ -539,14 +589,15 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                     properties: {}
                 });
             }
-            // 更新假节点位置与吸附线（全局拦截已处理对齐策略）
+            // 更新假节点位置与吸附线
             if (draggingNode) {
                 draggingNode.moveTo(x, y);
                 lf.setNodeSnapLine(draggingNode.getData());
-                // 磁吸：对齐线亮起时修正假节点位置（区分上下左右边缘）
+                // 磁吸：对齐线亮起时修正假节点位置（区分中心/上下左右边缘）
                 var sm = lf.snaplineModel;
                 if (sm) {
                     var dragH = draggingNode.height, dragW = draggingNode.width;
+                    var didSnap = false;
                     if (sm.isShowHorizontal) {
                         var topY2 = draggingNode.y - dragH / 2;
                         var bottomY2 = draggingNode.y + dragH / 2;
@@ -556,9 +607,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                         } else if (Math.abs(bottomY2 - sm.position.y) < sm.epsilon) {
                             snapY = sm.position.y - dragH / 2;  // 底部对齐
                         } else {
-                            snapY = sm.position.y;
+                            snapY = sm.position.y;               // 中心对齐
                         }
-                        if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); }
+                        if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); didSnap = true; }
                     }
                     if (sm.isShowVertical) {
                         var leftX2 = draggingNode.x - dragW / 2;
@@ -569,10 +620,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                         } else if (Math.abs(rightX2 - sm.position.x) < sm.epsilon) {
                             snapX = sm.position.x - dragW / 2;  // 右侧对齐
                         } else {
-                            snapX = sm.position.x;
+                            snapX = sm.position.x;               // 中心对齐
                         }
-                        if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); }
+                        if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
                     }
+                    // 咬合后刷新对齐线
+                    if (didSnap) lf.setNodeSnapLine(draggingNode.getData());
                 }
             }
         }
