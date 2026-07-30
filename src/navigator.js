@@ -282,20 +282,22 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var nRight = refBBox.x + refBBox.width / 2;
       var nCx = refBBox.x, nCy = refBBox.y;
 
-      // 辅助线只覆盖参考节点的实际宽度/高度（不延伸到拖拽节点）
+      // 辅助线从参考节点顶点延伸到拖拽节点顶点，形成可见连接线
 
       // 水平对齐: 中心线(y==nCy), 上边缘, 下边缘
       if (hR.center === null && Math.abs(y - nCy) < eps) {
-        var sw = wpsShapeWidthAtY(refModel, refBBox, nCy);
-        hR.center = { val: nCy, s: nCx - sw/2, e: nCx + sw/2 };
+        var sw1 = wpsShapeWidthAtY(dragModel, dragBBox, nCy);
+        var sw2 = wpsShapeWidthAtY(refModel, refBBox, nCy);
+        hR.center = { val: nCy, s: Math.min(x - sw1/2, nCx - sw2/2), e: Math.max(x + sw1/2, nCx + sw2/2) };
       }
       if (hR.top === null) {
         var lineY = null;
         if (Math.abs(topEdge - nTop) < eps) lineY = nTop;
         else if (Math.abs(topEdge - nBottom) < eps) lineY = nBottom;
         if (lineY !== null) {
-          var sw = wpsShapeWidthAtY(refModel, refBBox, lineY);
-          hR.top = { val: lineY, s: nCx - sw/2, e: nCx + sw/2 };
+          var sw1 = wpsShapeWidthAtY(dragModel, dragBBox, lineY);
+          var sw2 = wpsShapeWidthAtY(refModel, refBBox, lineY);
+          hR.top = { val: lineY, s: Math.min(x - sw1/2, nCx - sw2/2), e: Math.max(x + sw1/2, nCx + sw2/2) };
         }
       }
       if (hR.bottom === null) {
@@ -303,22 +305,25 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (Math.abs(bottomEdge - nTop) < eps) lineY = nTop;
         else if (Math.abs(bottomEdge - nBottom) < eps) lineY = nBottom;
         if (lineY !== null) {
-          var sw = wpsShapeWidthAtY(refModel, refBBox, lineY);
-          hR.bottom = { val: lineY, s: nCx - sw/2, e: nCx + sw/2 };
+          var sw1 = wpsShapeWidthAtY(dragModel, dragBBox, lineY);
+          var sw2 = wpsShapeWidthAtY(refModel, refBBox, lineY);
+          hR.bottom = { val: lineY, s: Math.min(x - sw1/2, nCx - sw2/2), e: Math.max(x + sw1/2, nCx + sw2/2) };
         }
       }
       // 垂直对齐: 中心线(x==nCx), 左边缘, 右边缘
       if (vR.center === null && Math.abs(x - nCx) < eps) {
-        var sh = wpsShapeHeightAtX(refModel, refBBox, nCx);
-        vR.center = { val: nCx, s: nCy - sh/2, e: nCy + sh/2 };
+        var sh1 = wpsShapeHeightAtX(dragModel, dragBBox, nCx);
+        var sh2 = wpsShapeHeightAtX(refModel, refBBox, nCx);
+        vR.center = { val: nCx, s: Math.min(y - sh1/2, nCy - sh2/2), e: Math.max(y + sh1/2, nCy + sh2/2) };
       }
       if (vR.left === null) {
         var lineX = null;
         if (Math.abs(leftEdge - nLeft) < eps) lineX = nLeft;
         else if (Math.abs(leftEdge - nRight) < eps) lineX = nRight;
         if (lineX !== null) {
-          var sh = wpsShapeHeightAtX(refModel, refBBox, lineX);
-          vR.left = { val: lineX, s: nCy - sh/2, e: nCy + sh/2 };
+          var sh1 = wpsShapeHeightAtX(dragModel, dragBBox, lineX);
+          var sh2 = wpsShapeHeightAtX(refModel, refBBox, lineX);
+          vR.left = { val: lineX, s: Math.min(y - sh1/2, nCy - sh2/2), e: Math.max(y + sh1/2, nCy + sh2/2) };
         }
       }
       if (vR.right === null) {
@@ -326,8 +331,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (Math.abs(rightEdge - nLeft) < eps) lineX = nLeft;
         else if (Math.abs(rightEdge - nRight) < eps) lineX = nRight;
         if (lineX !== null) {
-          var sh = wpsShapeHeightAtX(refModel, refBBox, lineX);
-          vR.right = { val: lineX, s: nCy - sh/2, e: nCy + sh/2 };
+          var sh1 = wpsShapeHeightAtX(dragModel, dragBBox, lineX);
+          var sh2 = wpsShapeHeightAtX(refModel, refBBox, lineX);
+          vR.right = { val: lineX, s: Math.min(y - sh1/2, nCy - sh2/2), e: Math.max(y + sh1/2, nCy + sh2/2) };
         }
       }
     }
