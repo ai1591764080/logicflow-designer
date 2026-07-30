@@ -284,6 +284,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var eps = WPS_EPS;
     var topEdge = y - h / 2, bottomEdge = y + h / 2;
     var leftEdge = x - w / 2, rightEdge = x + w / 2;
+    // 每条对齐线记录最佳匹配：{ val, s, e, dist }，dist 用于选最近的参考节点
     var hR = { center: null, top: null, bottom: null };
     var vR = { center: null, left: null, right: null };
 
@@ -297,48 +298,47 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var nLeft = refBBox.x - refBBox.width / 2;
       var nRight = refBBox.x + refBBox.width / 2;
       var nCx = refBBox.x, nCy = refBBox.y;
+      // 计算拖拽节点中心到参考节点中心的距离（用于选最近的参考节点）
+      var dist = Math.sqrt((x - nCx) * (x - nCx) + (y - nCy) * (y - nCy));
 
       // 辅助线端点在包围盒各边的中点上，线从一个节点的边中点连到另一个节点的边中点
+      // 每条线只保留距离最近的参考节点
 
       // 水平对齐: 中心线(y==nCy), 上边缘, 下边缘
-      if (hR.center === null && Math.abs(y - nCy) < eps) {
-        hR.center = { val: nCy, s: Math.min(nCx, x), e: Math.max(nCx, x) };
+      if (Math.abs(y - nCy) < eps && (hR.center === null || dist < hR.center.dist)) {
+        hR.center = { val: nCy, s: Math.min(nCx, x), e: Math.max(nCx, x), dist: dist };
       }
-      if (hR.top === null) {
-        var lineY = null;
-        if (Math.abs(topEdge - nTop) < eps) lineY = nTop;
-        else if (Math.abs(topEdge - nBottom) < eps) lineY = nBottom;
-        if (lineY !== null) {
-          hR.top = { val: lineY, s: Math.min(nCx, x), e: Math.max(nCx, x) };
-        }
+      // 上边缘对齐
+      var topLineY = null;
+      if (Math.abs(topEdge - nTop) < eps) topLineY = nTop;
+      else if (Math.abs(topEdge - nBottom) < eps) topLineY = nBottom;
+      if (topLineY !== null && (hR.top === null || dist < hR.top.dist)) {
+        hR.top = { val: topLineY, s: Math.min(nCx, x), e: Math.max(nCx, x), dist: dist };
       }
-      if (hR.bottom === null) {
-        var lineY = null;
-        if (Math.abs(bottomEdge - nTop) < eps) lineY = nTop;
-        else if (Math.abs(bottomEdge - nBottom) < eps) lineY = nBottom;
-        if (lineY !== null) {
-          hR.bottom = { val: lineY, s: Math.min(nCx, x), e: Math.max(nCx, x) };
-        }
+      // 下边缘对齐
+      var botLineY = null;
+      if (Math.abs(bottomEdge - nTop) < eps) botLineY = nTop;
+      else if (Math.abs(bottomEdge - nBottom) < eps) botLineY = nBottom;
+      if (botLineY !== null && (hR.bottom === null || dist < hR.bottom.dist)) {
+        hR.bottom = { val: botLineY, s: Math.min(nCx, x), e: Math.max(nCx, x), dist: dist };
       }
       // 垂直对齐: 中心线(x==nCx), 左边缘, 右边缘
-      if (vR.center === null && Math.abs(x - nCx) < eps) {
-        vR.center = { val: nCx, s: Math.min(nCy, y), e: Math.max(nCy, y) };
+      if (Math.abs(x - nCx) < eps && (vR.center === null || dist < vR.center.dist)) {
+        vR.center = { val: nCx, s: Math.min(nCy, y), e: Math.max(nCy, y), dist: dist };
       }
-      if (vR.left === null) {
-        var lineX = null;
-        if (Math.abs(leftEdge - nLeft) < eps) lineX = nLeft;
-        else if (Math.abs(leftEdge - nRight) < eps) lineX = nRight;
-        if (lineX !== null) {
-          vR.left = { val: lineX, s: Math.min(nCy, y), e: Math.max(nCy, y) };
-        }
+      // 左边缘对齐
+      var leftLineX = null;
+      if (Math.abs(leftEdge - nLeft) < eps) leftLineX = nLeft;
+      else if (Math.abs(leftEdge - nRight) < eps) leftLineX = nRight;
+      if (leftLineX !== null && (vR.left === null || dist < vR.left.dist)) {
+        vR.left = { val: leftLineX, s: Math.min(nCy, y), e: Math.max(nCy, y), dist: dist };
       }
-      if (vR.right === null) {
-        var lineX = null;
-        if (Math.abs(rightEdge - nLeft) < eps) lineX = nLeft;
-        else if (Math.abs(rightEdge - nRight) < eps) lineX = nRight;
-        if (lineX !== null) {
-          vR.right = { val: lineX, s: Math.min(nCy, y), e: Math.max(nCy, y) };
-        }
+      // 右边缘对齐
+      var rightLineX = null;
+      if (Math.abs(rightEdge - nLeft) < eps) rightLineX = nLeft;
+      else if (Math.abs(rightEdge - nRight) < eps) rightLineX = nRight;
+      if (rightLineX !== null && (vR.right === null || dist < vR.right.dist)) {
+        vR.right = { val: rightLineX, s: Math.min(nCy, y), e: Math.max(nCy, y), dist: dist };
       }
     }
     return { h: hR, v: vR };
