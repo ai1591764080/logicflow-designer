@@ -96,9 +96,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var wpsVMarkers = {}; // 垂直线两端小方块
   var wpsCenterCross = null; // 拖拽节点中心十字准星
   var WPS_MARKER_SIZE = 5;
-  var WPS_CROSS_ARM = 8; // 准星臂长(px)
+  var WPS_CROSS_ARM = 10; // 准星臂长(px)
   var WPS_EPS = 10; // 吸附容差(px)
-  var WPS_LINE_COLOR = '#ff4757'; // WPS 风格品红色
+  var WPS_LINE_COLOR = '#8c8c8c'; // 辅助线灰色
+  var WPS_CROSS_COLOR = '#1677ff'; // 中心准星蓝色
 
   function initWpsSnapline() {
     var svg = lf.container.querySelector('svg');
@@ -149,22 +150,22 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       wpsSnaplineGroup.appendChild(m2);
       wpsVMarkers[t] = [m1, m2];
     });
-    // 拖拽节点中心十字准星
+    // 拖拽节点中心十字准星（蓝色醒目）
     wpsCenterCross = document.createElementNS(ns, 'g');
     wpsCenterCross.setAttribute('visibility', 'hidden');
     var chH = document.createElementNS(ns, 'line');
     var chV = document.createElementNS(ns, 'line');
     var chDot = document.createElementNS(ns, 'circle');
     [chH, chV].forEach(function (l) {
-      l.setAttribute('stroke', WPS_LINE_COLOR);
-      l.setAttribute('stroke-width', '1.5');
+      l.setAttribute('stroke', WPS_CROSS_COLOR);
+      l.setAttribute('stroke-width', '2');
     });
     chH.setAttribute('x1', -WPS_CROSS_ARM); chH.setAttribute('x2', WPS_CROSS_ARM);
     chH.setAttribute('y1', 0); chH.setAttribute('y2', 0);
     chV.setAttribute('x1', 0); chV.setAttribute('x2', 0);
     chV.setAttribute('y1', -WPS_CROSS_ARM); chV.setAttribute('y2', WPS_CROSS_ARM);
-    chDot.setAttribute('r', '2');
-    chDot.setAttribute('fill', WPS_LINE_COLOR);
+    chDot.setAttribute('r', '3');
+    chDot.setAttribute('fill', WPS_CROSS_COLOR);
     wpsCenterCross.appendChild(chH);
     wpsCenterCross.appendChild(chV);
     wpsCenterCross.appendChild(chDot);
