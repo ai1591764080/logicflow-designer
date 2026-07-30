@@ -348,21 +348,26 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var nodeModel = lf.graphModel.getNodeModelById(data.id);
     if (!nodeModel) return;
     var bbox = wpsGetNodeBBox(nodeModel);
-    var nd = { id: data.id, x: nodeModel.x, y: nodeModel.y, width: bbox.width, height: bbox.height };
+    var w = bbox.width, h = bbox.height;
+
+    // 关键：先将节点移到鼠标位置，确保原生 snapline 检测始终基于鼠标坐标
+    // 而非上次磁吸后的位置，彻底消除反馈循环导致的摆动
+    lf.graphModel.moveNode2Coordinate(data.id, data.x, data.y);
+
+    var nd = { id: data.id, x: data.x, y: data.y, width: w, height: h };
     var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
     wpsApplySnaplineVisual(align);
-    wpsUpdateCenterCross(nodeModel.x, nodeModel.y);
+    wpsUpdateCenterCross(data.x, data.y);
     lf.setNodeSnapLine(nd);
-    var snap = wpsApplyMagneticSnap(data.id, nd.x, nd.y, nd.width, nd.height);
+
+    var snap = wpsApplyMagneticSnap(data.id, data.x, data.y, w, h);
     if (snap.snapped) {
       lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
       wpsUpdateCenterCross(snap.x, snap.y);
-      // 磁吸后只刷新视觉辅助线，不再调用 setNodeSnapLine
-      // 避免在吸附位置重新检测导致反馈循环（左右摆动）
-      var updated = nodeModel.getData();
-      updated.width = bbox.width;
-      updated.height = bbox.height;
-      var align2 = wpsComputeAlignments(updated, lf.graphModel.nodes);
+      var align2 = wpsComputeAlignments(
+        { id: data.id, x: snap.x, y: snap.y, width: w, height: h },
+        lf.graphModel.nodes
+      );
       wpsApplySnaplineVisual(align2);
     }
   });
