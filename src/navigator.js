@@ -220,6 +220,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
   // 扫描全部节点，找出所有对齐关系（六线独立检测，不 break）
+  // 每条线返回 { val: 坐标值, s: 起点, e: 终点 }，跨度匹配参考节点尺寸
   function wpsComputeAlignments(nodeData, allNodes) {
     var x = nodeData.x, y = nodeData.y;
     var w = nodeData.width, h = nodeData.height;
@@ -248,44 +249,50 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var nRight = refBBox.x + refBBox.width / 2;
       var nCx = refBBox.x, nCy = refBBox.y;
 
-      // 水平对齐: 中心线(y==nCy), 上边缘(topEdge==nTop/nBottom), 下边缘(bottomEdge==nTop/nBottom)
-      if (hR.center === null && Math.abs(y - nCy) < eps) hR.center = nCy;
+      // 水平线跨度匹配参考节点宽度，垂直线跨度匹配参考节点高度
+      var hS = nLeft, hE = nRight;
+      var vS = nTop, vE = nBottom;
+
+      // 水平对齐: 中心线(y==nCy), 上边缘, 下边缘
+      if (hR.center === null && Math.abs(y - nCy) < eps) hR.center = { val: nCy, s: hS, e: hE };
       if (hR.top === null) {
-        if (Math.abs(topEdge - nTop) < eps) hR.top = nTop;
-        else if (Math.abs(topEdge - nBottom) < eps) hR.top = nBottom;
+        if (Math.abs(topEdge - nTop) < eps) hR.top = { val: nTop, s: hS, e: hE };
+        else if (Math.abs(topEdge - nBottom) < eps) hR.top = { val: nBottom, s: hS, e: hE };
       }
       if (hR.bottom === null) {
-        if (Math.abs(bottomEdge - nTop) < eps) hR.bottom = nTop;
-        else if (Math.abs(bottomEdge - nBottom) < eps) hR.bottom = nBottom;
+        if (Math.abs(bottomEdge - nTop) < eps) hR.bottom = { val: nTop, s: hS, e: hE };
+        else if (Math.abs(bottomEdge - nBottom) < eps) hR.bottom = { val: nBottom, s: hS, e: hE };
       }
-      // 垂直对齐: 中心线(x==nCx), 左边缘(leftEdge==nLeft/nRight), 右边缘(rightEdge==nLeft/nRight)
-      if (vR.center === null && Math.abs(x - nCx) < eps) vR.center = nCx;
+      // 垂直对齐: 中心线(x==nCx), 左边缘, 右边缘
+      if (vR.center === null && Math.abs(x - nCx) < eps) vR.center = { val: nCx, s: vS, e: vE };
       if (vR.left === null) {
-        if (Math.abs(leftEdge - nLeft) < eps) vR.left = nLeft;
-        else if (Math.abs(leftEdge - nRight) < eps) vR.left = nRight;
+        if (Math.abs(leftEdge - nLeft) < eps) vR.left = { val: nLeft, s: vS, e: vE };
+        else if (Math.abs(leftEdge - nRight) < eps) vR.left = { val: nRight, s: vS, e: vE };
       }
       if (vR.right === null) {
-        if (Math.abs(rightEdge - nLeft) < eps) vR.right = nLeft;
-        else if (Math.abs(rightEdge - nRight) < eps) vR.right = nRight;
+        if (Math.abs(rightEdge - nLeft) < eps) vR.right = { val: nLeft, s: vS, e: vE };
+        else if (Math.abs(rightEdge - nRight) < eps) vR.right = { val: nRight, s: vS, e: vE };
       }
     }
     return { h: hR, v: vR };
   }
 
-  // 渲染对齐辅助线 + 端点标记
+  // 渲染对齐辅助线 + 端点标记（线长匹配参考节点尺寸）
   function wpsApplySnaplineVisual(align) {
     var half = WPS_MARKER_SIZE / 2;
-    var EXT = 5000;
     ['center', 'top', 'bottom'].forEach(function (k) {
-      var yVal = align.h[k];
-      if (yVal !== null && yVal !== false && yVal !== undefined) {
+      var entry = align.h[k];
+      if (entry && entry.val !== null && entry.val !== undefined) {
+        var yVal = entry.val, s = entry.s, e = entry.e;
+        wpsHLines[k].setAttribute('x1', s);
+        wpsHLines[k].setAttribute('x2', e);
         wpsHLines[k].setAttribute('y1', yVal);
         wpsHLines[k].setAttribute('y2', yVal);
         wpsHLines[k].setAttribute('visibility', 'visible');
-        wpsHMarkers[k][0].setAttribute('x', -EXT - half);
+        wpsHMarkers[k][0].setAttribute('x', s - half);
         wpsHMarkers[k][0].setAttribute('y', yVal - half);
         wpsHMarkers[k][0].setAttribute('visibility', 'visible');
-        wpsHMarkers[k][1].setAttribute('x', EXT - half);
+        wpsHMarkers[k][1].setAttribute('x', e - half);
         wpsHMarkers[k][1].setAttribute('y', yVal - half);
         wpsHMarkers[k][1].setAttribute('visibility', 'visible');
       } else {
@@ -295,16 +302,19 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       }
     });
     ['center', 'left', 'right'].forEach(function (k) {
-      var xVal = align.v[k];
-      if (xVal !== null && xVal !== false && xVal !== undefined) {
+      var entry = align.v[k];
+      if (entry && entry.val !== null && entry.val !== undefined) {
+        var xVal = entry.val, s = entry.s, e = entry.e;
         wpsVLines[k].setAttribute('x1', xVal);
         wpsVLines[k].setAttribute('x2', xVal);
+        wpsVLines[k].setAttribute('y1', s);
+        wpsVLines[k].setAttribute('y2', e);
         wpsVLines[k].setAttribute('visibility', 'visible');
         wpsVMarkers[k][0].setAttribute('x', xVal - half);
-        wpsVMarkers[k][0].setAttribute('y', -EXT - half);
+        wpsVMarkers[k][0].setAttribute('y', s - half);
         wpsVMarkers[k][0].setAttribute('visibility', 'visible');
         wpsVMarkers[k][1].setAttribute('x', xVal - half);
-        wpsVMarkers[k][1].setAttribute('y', EXT - half);
+        wpsVMarkers[k][1].setAttribute('y', e - half);
         wpsVMarkers[k][1].setAttribute('visibility', 'visible');
       } else {
         wpsVLines[k].setAttribute('visibility', 'hidden');
