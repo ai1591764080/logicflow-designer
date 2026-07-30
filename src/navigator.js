@@ -98,6 +98,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var WPS_MARKER_SIZE = 5;
   var WPS_CROSS_ARM = 10; // 准星臂长(px)
   var WPS_EPS = 10; // 吸附容差(px)
+  var WPS_DISPLAY_EPS = 2; // 辅助线显示阈值(px)：只有节点边缘实际对齐时才显示辅助线
   var WPS_LINE_COLOR = '#8c8c8c'; // 辅助线灰色
   var WPS_CROSS_COLOR = '#1677ff'; // 中心准星蓝色
 
@@ -113,6 +114,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var ln = document.createElementNS(ns, 'line');
       ln.setAttribute('stroke', WPS_LINE_COLOR);
       ln.setAttribute('stroke-width', '1');
+      ln.setAttribute('stroke-dasharray', '4,4');
       ln.setAttribute('x1', '-100000'); ln.setAttribute('x2', '100000');
       ln.setAttribute('visibility', 'hidden');
       wpsSnaplineGroup.appendChild(ln);
@@ -134,6 +136,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var ln = document.createElementNS(ns, 'line');
       ln.setAttribute('stroke', WPS_LINE_COLOR);
       ln.setAttribute('stroke-width', '1');
+      ln.setAttribute('stroke-dasharray', '4,4');
       ln.setAttribute('y1', '-100000'); ln.setAttribute('y2', '100000');
       ln.setAttribute('visibility', 'hidden');
       wpsSnaplineGroup.appendChild(ln);
@@ -341,6 +344,63 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     return { h: hR, v: vR };
   }
 
+  // 基于严格显示阈值计算辅助线（只有节点边缘真正对齐时才亮线）
+  function wpsComputeDisplayAlignments(nodeData, allNodes) {
+    var dragModel = lf.graphModel.getNodeModelById(nodeData.id);
+    var dragBBox = dragModel ? wpsGetNodeBBox(dragModel) : { x: nodeData.x, y: nodeData.y, width: nodeData.width || 80, height: nodeData.height || 60 };
+    var x = dragBBox.x, y = dragBBox.y;
+    var w = dragBBox.width, h = dragBBox.height;
+    if (!w) w = 80; if (!h) h = 60;
+    var deps = WPS_DISPLAY_EPS;
+    var topEdge = y - h / 2, bottomEdge = y + h / 2;
+    var leftEdge = x - w / 2, rightEdge = x + w / 2;
+    var hR = { center: null, top: null, bottom: null };
+    var vR = { center: null, left: null, right: null };
+    for (var i = 0; i < allNodes.length; i++) {
+      var nd = allNodes[i];
+      if (nd.id === nodeData.id) continue;
+      var refModel = lf.graphModel.getNodeModelById(nd.id);
+      var refBBox = refModel ? wpsGetNodeBBox(refModel) : { x: nd.x, y: nd.y, width: nd.width || 80, height: nd.height || 60 };
+      var nTop = refBBox.y - refBBox.height / 2;
+      var nBottom = refBBox.y + refBBox.height / 2;
+      var nLeft = refBBox.x - refBBox.width / 2;
+      var nRight = refBBox.x + refBBox.width / 2;
+      var nCx = refBBox.x, nCy = refBBox.y;
+      var dist = Math.sqrt((x - nCx) * (x - nCx) + (y - nCy) * (y - nCy));
+      if (Math.abs(y - nCy) < deps && (hR.center === null || dist < hR.center.dist)) {
+        hR.center = { val: nCy, s: Math.min(nCx, x), e: Math.max(nCx, x), dist: dist };
+      }
+      var topLineY = null;
+      if (Math.abs(topEdge - nTop) < deps) topLineY = nTop;
+      else if (Math.abs(topEdge - nBottom) < deps) topLineY = nBottom;
+      if (topLineY !== null && (hR.top === null || dist < hR.top.dist)) {
+        hR.top = { val: topLineY, s: Math.min(nCx, x), e: Math.max(nCx, x), dist: dist };
+      }
+      var botLineY = null;
+      if (Math.abs(bottomEdge - nTop) < deps) botLineY = nTop;
+      else if (Math.abs(bottomEdge - nBottom) < deps) botLineY = nBottom;
+      if (botLineY !== null && (hR.bottom === null || dist < hR.bottom.dist)) {
+        hR.bottom = { val: botLineY, s: Math.min(nCx, x), e: Math.max(nCx, x), dist: dist };
+      }
+      if (Math.abs(x - nCx) < deps && (vR.center === null || dist < vR.center.dist)) {
+        vR.center = { val: nCx, s: Math.min(nCy, y), e: Math.max(nCy, y), dist: dist };
+      }
+      var leftLineX = null;
+      if (Math.abs(leftEdge - nLeft) < deps) leftLineX = nLeft;
+      else if (Math.abs(leftEdge - nRight) < deps) leftLineX = nRight;
+      if (leftLineX !== null && (vR.left === null || dist < vR.left.dist)) {
+        vR.left = { val: leftLineX, s: Math.min(nCy, y), e: Math.max(nCy, y), dist: dist };
+      }
+      var rightLineX = null;
+      if (Math.abs(rightEdge - nLeft) < deps) rightLineX = nLeft;
+      else if (Math.abs(rightEdge - nRight) < deps) rightLineX = nRight;
+      if (rightLineX !== null && (vR.right === null || dist < vR.right.dist)) {
+        vR.right = { val: rightLineX, s: Math.min(nCy, y), e: Math.max(nCy, y), dist: dist };
+      }
+    }
+    return { h: hR, v: vR };
+  }
+
   // 渲染对齐辅助线 + 端点标记（线长匹配参考节点尺寸）
   function wpsApplySnaplineVisual(align) {
     var half = WPS_MARKER_SIZE / 2;
@@ -435,7 +495,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
 
     // 基于原始鼠标位置计算对齐线
     var nd = { id: data.id, x: rawX, y: rawY, width: w, height: h };
-    var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
+    var align = wpsComputeDisplayAlignments(nd, lf.graphModel.nodes);
     wpsApplySnaplineVisual(align);
     // 十字准星始终在节点实际中心
     wpsUpdateCenterCross(nodeModel.x, nodeModel.y);
@@ -447,11 +507,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
       // 磁吸后十字准星跟随节点新中心
       wpsUpdateCenterCross(nodeModel.x, nodeModel.y);
-      // 磁吸后用原始位置重新计算对齐线（保持三条线可见）
-      var align2 = wpsComputeAlignments(
-        { id: data.id, x: rawX, y: rawY, width: w, height: h },
-        lf.graphModel.nodes
-      );
+      // 磁吸后用实际位置重新计算对齐线（基于吸附后的真实坐标，确保辅助线与实际对齐一致）
+      var snappedData = { id: data.id, x: nodeModel.x, y: nodeModel.y, width: w, height: h };
+      var align2 = wpsComputeDisplayAlignments(snappedData, lf.graphModel.nodes);
       wpsApplySnaplineVisual(align2);
     }
   });
@@ -1304,7 +1362,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         draggingNode.moveTo(x, y);
         wpsUpdateCenterCross(x, y);
         var fd = draggingNode.getData();
-        var fAlign = wpsComputeAlignments(fd, lf.graphModel.nodes);
+        var fAlign = wpsComputeDisplayAlignments(fd, lf.graphModel.nodes);
         wpsApplySnaplineVisual(fAlign);
         lf.setNodeSnapLine(fd);
         // 磁吸：对齐线亮起时修正假节点位置（区分中心/上下左右边缘）
@@ -1338,10 +1396,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             }
             if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
           }
-          // 咬合后刷新对齐线（不再调用 setNodeSnapLine 避免反馈循环）
+          // 咬合后用实际位置刷新对齐线（确保辅助线与实际对齐一致）
           if (didSnap) {
             var fd2 = draggingNode.getData();
-            var fAlign2 = wpsComputeAlignments(fd2, lf.graphModel.nodes);
+            var fAlign2 = wpsComputeDisplayAlignments(fd2, lf.graphModel.nodes);
             wpsApplySnaplineVisual(fAlign2);
             wpsUpdateCenterCross(draggingNode.x, draggingNode.y);
           }

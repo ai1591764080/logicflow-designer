@@ -99,6 +99,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var wpsSnaplineGroup = null;
     var wpsHLines = {};  // center, top, bottom
     var wpsVLines = {};  // center, left, right
+    var WPS_DISPLAY_EPS = 2; // 辅助线显示阈值(px)：只有节点边缘真正对齐时才显示辅助线
 
     function initWpsSnapline() {
         var svg = lf.container.querySelector('svg');
@@ -151,6 +152,32 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         return { h: hR, v: vR, topEdge: topEdge, bottomEdge: bottomEdge, leftEdge: leftEdge, rightEdge: rightEdge, cx: x, cy: y };
     }
 
+    // 基于严格显示阈值计算辅助线（只有节点边缘真正对齐时才亮线）
+    function wpsComputeDisplayAlignments(nodeData, allNodes) {
+        var x = nodeData.x, y = nodeData.y;
+        var w = nodeData.width, h = nodeData.height;
+        var deps = WPS_DISPLAY_EPS;
+        var topEdge = y - h / 2, bottomEdge = y + h / 2;
+        var leftEdge = x - w / 2, rightEdge = x + w / 2;
+        var hR = { center: false, top: false, bottom: false };
+        var vR = { center: false, left: false, right: false };
+
+        for (var i = 0; i < allNodes.length; i++) {
+            var nd = allNodes[i];
+            if (nd.id === nodeData.id) continue;
+            var nTop = nd.y - nd.height / 2, nBottom = nd.y + nd.height / 2;
+            var nLeft = nd.x - nd.width / 2, nRight = nd.x + nd.width / 2;
+
+            if (Math.abs(y - nd.y) < deps) hR.center = true;
+            if (Math.abs(topEdge - nTop) < deps || Math.abs(topEdge - nBottom) < deps) hR.top = true;
+            if (Math.abs(bottomEdge - nTop) < deps || Math.abs(bottomEdge - nBottom) < deps) hR.bottom = true;
+            if (Math.abs(x - nd.x) < deps) vR.center = true;
+            if (Math.abs(leftEdge - nLeft) < deps || Math.abs(leftEdge - nRight) < deps) vR.left = true;
+            if (Math.abs(rightEdge - nLeft) < deps || Math.abs(rightEdge - nRight) < deps) vR.right = true;
+        }
+        return { h: hR, v: vR, topEdge: topEdge, bottomEdge: bottomEdge, leftEdge: leftEdge, rightEdge: rightEdge, cx: x, cy: y };
+    }
+
     function wpsApplySnaplineVisual(align) {
         var setH = function (k, yv) { wpsHLines[k].setAttribute('y1', yv); wpsHLines[k].setAttribute('y2', yv); wpsHLines[k].setAttribute('visibility', align.h[k] ? 'visible' : 'hidden'); };
         var setV = function (k, xv) { wpsVLines[k].setAttribute('x1', xv); wpsVLines[k].setAttribute('x2', xv); wpsVLines[k].setAttribute('visibility', align.v[k] ? 'visible' : 'hidden'); };
@@ -170,7 +197,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (!nodeModel) return;
         var nd = nodeModel.getData();
         // 用真实坐标计算全部对齐线并更新自定义 SVG
-        var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
+        // 用严格显示阈值计算辅助线（只有真正对齐时才显示）
+        var align = wpsComputeDisplayAlignments(nd, lf.graphModel.nodes);
         wpsApplySnaplineVisual(align);
         // 同步原生 snaplineModel（DnD 磁吸依赖它），但以真实坐标重新计算
         lf.setNodeSnapLine(nd);
@@ -201,7 +229,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (needsSnap && (snapX !== x || snapY !== y)) {
             lf.graphModel.moveNode2Coordinate(data.id, snapX, snapY);
             var updated = nodeModel.getData();
-            var align2 = wpsComputeAlignments(updated, lf.graphModel.nodes);
+            var align2 = wpsComputeDisplayAlignments(updated, lf.graphModel.nodes);
             wpsApplySnaplineVisual(align2);
             lf.setNodeSnapLine(updated);
         }
@@ -660,7 +688,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             if (draggingNode) {
                 draggingNode.moveTo(x, y);
                 var fd = draggingNode.getData();
-                var fAlign = wpsComputeAlignments(fd, lf.graphModel.nodes);
+                var fAlign = wpsComputeDisplayAlignments(fd, lf.graphModel.nodes);
                 wpsApplySnaplineVisual(fAlign);
                 lf.setNodeSnapLine(fd);
                 // 磁吸：对齐线亮起时修正假节点位置（区分中心/上下左右边缘）
@@ -697,7 +725,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                     // 咬合后刷新对齐线
                     if (didSnap) {
                         var fd2 = draggingNode.getData();
-                        var fAlign2 = wpsComputeAlignments(fd2, lf.graphModel.nodes);
+                        var fAlign2 = wpsComputeDisplayAlignments(fd2, lf.graphModel.nodes);
                         wpsApplySnaplineVisual(fAlign2);
                         lf.setNodeSnapLine(fd2);
                     }
