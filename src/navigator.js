@@ -249,9 +249,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var nRight = refBBox.x + refBBox.width / 2;
       var nCx = refBBox.x, nCy = refBBox.y;
 
-      // 水平线跨度匹配参考节点宽度，垂直线跨度匹配参考节点高度
-      var hS = nLeft, hE = nRight;
-      var vS = nTop, vE = nBottom;
+      // 水平线跨度：覆盖两个节点的左右范围
+      var hS = Math.min(leftEdge, nLeft);
+      var hE = Math.max(rightEdge, nRight);
+      // 垂直线跨度：覆盖两个节点的上下范围
+      var vS = Math.min(topEdge, nTop);
+      var vE = Math.max(bottomEdge, nBottom);
 
       // 水平对齐: 中心线(y==nCy), 上边缘, 下边缘
       if (hR.center === null && Math.abs(y - nCy) < eps) hR.center = { val: nCy, s: hS, e: hE };
