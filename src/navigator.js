@@ -219,19 +219,52 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     return { x: d.x || 0, y: d.y || 0, width: d.width || 80, height: d.height || 60 };
   }
 
-  // 扫描全部节点，找出所有对齐关系（六线独立检测，不 break）
-  // 每条线返回 { val: 坐标值, s: 起点, e: 终点 }，跨度匹配参考节点尺寸
-  function wpsComputeAlignments(nodeData, allNodes) {
-    var x = nodeData.x, y = nodeData.y;
-    var w = nodeData.width, h = nodeData.height;
-    if (!w || !h) {
-      var nodeModel = lf.graphModel.getNodeModelById(nodeData.id);
-      if (nodeModel) {
-        var bbox = wpsGetNodeBBox(nodeModel);
-        w = bbox.width; h = bbox.height;
-      }
-      if (!w) w = 80; if (!h) h = 60;
+  // 计算形状在指定 y 坐标处的实际宽度（圆形/菱形在边缘处比包围盒窄）
+  function wpsShapeWidthAtY(nodeModel, bbox, lineY) {
+    var type = nodeModel.type || '';
+    var cx = bbox.x, cy = bbox.y, w = bbox.width, h = bbox.height;
+    if (type === 'circle') {
+      var r = Math.min(w, h) / 2;
+      var dy = lineY - cy;
+      if (Math.abs(dy) >= r) return 0;
+      return 2 * Math.sqrt(r * r - dy * dy);
     }
+    if (type === 'diamond') {
+      var rx = w / 2, ry = h / 2;
+      var dy = lineY - cy;
+      if (Math.abs(dy) >= ry) return 0;
+      return 2 * rx * (1 - Math.abs(dy) / ry);
+    }
+    return w; // 矩形等：全宽
+  }
+
+  // 计算形状在指定 x 坐标处的实际高度
+  function wpsShapeHeightAtX(nodeModel, bbox, lineX) {
+    var type = nodeModel.type || '';
+    var cx = bbox.x, cy = bbox.y, w = bbox.width, h = bbox.height;
+    if (type === 'circle') {
+      var r = Math.min(w, h) / 2;
+      var dx = lineX - cx;
+      if (Math.abs(dx) >= r) return 0;
+      return 2 * Math.sqrt(r * r - dx * dx);
+    }
+    if (type === 'diamond') {
+      var rx = w / 2, ry = h / 2;
+      var dx = lineX - cx;
+      if (Math.abs(dx) >= rx) return 0;
+      return 2 * ry * (1 - Math.abs(dx) / rx);
+    }
+    return h;
+  }
+
+  // 扫描全部节点，找出所有对齐关系（六线独立检测，不 break）
+  // 每条线返回 { val: 坐标值, s: 起点, e: 终点 }，跨度根据形状实际宽度计算
+  function wpsComputeAlignments(nodeData, allNodes) {
+    var dragModel = lf.graphModel.getNodeModelById(nodeData.id);
+    var dragBBox = dragModel ? wpsGetNodeBBox(dragModel) : { x: nodeData.x, y: nodeData.y, width: nodeData.width || 80, height: nodeData.height || 60 };
+    var x = dragBBox.x, y = dragBBox.y;
+    var w = dragBBox.width, h = dragBBox.height;
+    if (!w) w = 80; if (!h) h = 60;
     var eps = WPS_EPS;
     var topEdge = y - h / 2, bottomEdge = y + h / 2;
     var leftEdge = x - w / 2, rightEdge = x + w / 2;
@@ -249,32 +282,67 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       var nRight = refBBox.x + refBBox.width / 2;
       var nCx = refBBox.x, nCy = refBBox.y;
 
-      // 水平线跨度：覆盖两个节点的左右范围
-      var hS = Math.min(leftEdge, nLeft);
-      var hE = Math.max(rightEdge, nRight);
-      // 垂直线跨度：覆盖两个节点的上下范围
-      var vS = Math.min(topEdge, nTop);
-      var vE = Math.max(bottomEdge, nBottom);
+      // 计算每个对齐位置的实际跨度（根据两个形状的真实宽度/高度）
+      // 水平线：两个形状在 lineY 处的实际宽度合并
+      // 垂直线：两个形状在 lineX 处的实际高度合并
 
       // 水平对齐: 中心线(y==nCy), 上边缘, 下边缘
-      if (hR.center === null && Math.abs(y - nCy) < eps) hR.center = { val: nCy, s: hS, e: hE };
+      if (hR.center === null && Math.abs(y - nCy) < eps) {
+        var sw1 = wpsShapeWidthAtY(dragModel, dragBBox, nCy);
+        var sw2 = wpsShapeWidthAtY(refModel, refBBox, nCy);
+        var s1 = Math.min(x - sw1/2, nCx - sw2/2), s2 = Math.max(x + sw1/2, nCx + sw2/2);
+        hR.center = { val: nCy, s: s1, e: s2 };
+      }
       if (hR.top === null) {
-        if (Math.abs(topEdge - nTop) < eps) hR.top = { val: nTop, s: hS, e: hE };
-        else if (Math.abs(topEdge - nBottom) < eps) hR.top = { val: nBottom, s: hS, e: hE };
+        var lineY = null;
+        if (Math.abs(topEdge - nTop) < eps) lineY = nTop;
+        else if (Math.abs(topEdge - nBottom) < eps) lineY = nBottom;
+        if (lineY !== null) {
+          var sw1 = wpsShapeWidthAtY(dragModel, dragBBox, lineY);
+          var sw2 = wpsShapeWidthAtY(refModel, refBBox, lineY);
+          var s1 = Math.min(x - sw1/2, nCx - sw2/2), s2 = Math.max(x + sw1/2, nCx + sw2/2);
+          hR.top = { val: lineY, s: s1, e: s2 };
+        }
       }
       if (hR.bottom === null) {
-        if (Math.abs(bottomEdge - nTop) < eps) hR.bottom = { val: nTop, s: hS, e: hE };
-        else if (Math.abs(bottomEdge - nBottom) < eps) hR.bottom = { val: nBottom, s: hS, e: hE };
+        var lineY = null;
+        if (Math.abs(bottomEdge - nTop) < eps) lineY = nTop;
+        else if (Math.abs(bottomEdge - nBottom) < eps) lineY = nBottom;
+        if (lineY !== null) {
+          var sw1 = wpsShapeWidthAtY(dragModel, dragBBox, lineY);
+          var sw2 = wpsShapeWidthAtY(refModel, refBBox, lineY);
+          var s1 = Math.min(x - sw1/2, nCx - sw2/2), s2 = Math.max(x + sw1/2, nCx + sw2/2);
+          hR.bottom = { val: lineY, s: s1, e: s2 };
+        }
       }
       // 垂直对齐: 中心线(x==nCx), 左边缘, 右边缘
-      if (vR.center === null && Math.abs(x - nCx) < eps) vR.center = { val: nCx, s: vS, e: vE };
+      if (vR.center === null && Math.abs(x - nCx) < eps) {
+        var sh1 = wpsShapeHeightAtX(dragModel, dragBBox, nCx);
+        var sh2 = wpsShapeHeightAtX(refModel, refBBox, nCx);
+        var s1 = Math.min(y - sh1/2, nCy - sh2/2), s2 = Math.max(y + sh1/2, nCy + sh2/2);
+        vR.center = { val: nCx, s: s1, e: s2 };
+      }
       if (vR.left === null) {
-        if (Math.abs(leftEdge - nLeft) < eps) vR.left = { val: nLeft, s: vS, e: vE };
-        else if (Math.abs(leftEdge - nRight) < eps) vR.left = { val: nRight, s: vS, e: vE };
+        var lineX = null;
+        if (Math.abs(leftEdge - nLeft) < eps) lineX = nLeft;
+        else if (Math.abs(leftEdge - nRight) < eps) lineX = nRight;
+        if (lineX !== null) {
+          var sh1 = wpsShapeHeightAtX(dragModel, dragBBox, lineX);
+          var sh2 = wpsShapeHeightAtX(refModel, refBBox, lineX);
+          var s1 = Math.min(y - sh1/2, nCy - sh2/2), s2 = Math.max(y + sh1/2, nCy + sh2/2);
+          vR.left = { val: lineX, s: s1, e: s2 };
+        }
       }
       if (vR.right === null) {
-        if (Math.abs(rightEdge - nLeft) < eps) vR.right = { val: nLeft, s: vS, e: vE };
-        else if (Math.abs(rightEdge - nRight) < eps) vR.right = { val: nRight, s: vS, e: vE };
+        var lineX = null;
+        if (Math.abs(rightEdge - nLeft) < eps) lineX = nLeft;
+        else if (Math.abs(rightEdge - nRight) < eps) lineX = nRight;
+        if (lineX !== null) {
+          var sh1 = wpsShapeHeightAtX(dragModel, dragBBox, lineX);
+          var sh2 = wpsShapeHeightAtX(refModel, refBBox, lineX);
+          var s1 = Math.min(y - sh1/2, nCy - sh2/2), s2 = Math.max(y + sh1/2, nCy + sh2/2);
+          vR.right = { val: lineX, s: s1, e: s2 };
+        }
       }
     }
     return { h: hR, v: vR };
