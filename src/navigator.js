@@ -222,39 +222,41 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // 计算形状在指定 y 坐标处的实际宽度（圆形/菱形在边缘处比包围盒窄）
   function wpsShapeWidthAtY(nodeModel, bbox, lineY) {
     var type = nodeModel.type || '';
-    var cx = bbox.x, cy = bbox.y, w = bbox.width, h = bbox.height;
+    var cx = bbox.x, cy = bbox.y;
     if (type === 'circle') {
-      var r = Math.min(w, h) / 2;
+      var r = nodeModel.r || Math.min(bbox.width, bbox.height) / 2;
       var dy = lineY - cy;
       if (Math.abs(dy) >= r) return 0;
       return 2 * Math.sqrt(r * r - dy * dy);
     }
     if (type === 'diamond') {
-      var rx = w / 2, ry = h / 2;
+      var rx = nodeModel.rx || bbox.width / 2;
+      var ry = nodeModel.ry || bbox.height / 2;
       var dy = lineY - cy;
       if (Math.abs(dy) >= ry) return 0;
       return 2 * rx * (1 - Math.abs(dy) / ry);
     }
-    return w; // 矩形等：全宽
+    return bbox.width; // 矩形等：全宽
   }
 
   // 计算形状在指定 x 坐标处的实际高度
   function wpsShapeHeightAtX(nodeModel, bbox, lineX) {
     var type = nodeModel.type || '';
-    var cx = bbox.x, cy = bbox.y, w = bbox.width, h = bbox.height;
+    var cx = bbox.x, cy = bbox.y;
     if (type === 'circle') {
-      var r = Math.min(w, h) / 2;
+      var r = nodeModel.r || Math.min(bbox.width, bbox.height) / 2;
       var dx = lineX - cx;
       if (Math.abs(dx) >= r) return 0;
       return 2 * Math.sqrt(r * r - dx * dx);
     }
     if (type === 'diamond') {
-      var rx = w / 2, ry = h / 2;
+      var rx = nodeModel.rx || bbox.width / 2;
+      var ry = nodeModel.ry || bbox.height / 2;
       var dx = lineX - cx;
       if (Math.abs(dx) >= rx) return 0;
       return 2 * ry * (1 - Math.abs(dx) / rx);
     }
-    return h;
+    return bbox.height;
   }
 
   // 扫描全部节点，找出所有对齐关系（六线独立检测，不 break）
