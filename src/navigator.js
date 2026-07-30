@@ -398,20 +398,18 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var snapX = x, snapY = y;
     var needsSnap = false;
     if (sm.isShowHorizontal) {
-      needsSnap = true;
       var topEdge = y - h / 2, bottomEdge = y + h / 2;
       var targetY = sm.position.y;
-      if (Math.abs(topEdge - targetY) < sm.epsilon) { snapY = targetY + h / 2; }
-      else if (Math.abs(bottomEdge - targetY) < sm.epsilon) { snapY = targetY - h / 2; }
-      else { snapY = targetY; }
+      if (Math.abs(topEdge - targetY) < sm.epsilon) { snapY = targetY + h / 2; needsSnap = true; }
+      else if (Math.abs(bottomEdge - targetY) < sm.epsilon) { snapY = targetY - h / 2; needsSnap = true; }
+      else if (Math.abs(y - targetY) < sm.epsilon) { snapY = targetY; needsSnap = true; }
     }
     if (sm.isShowVertical) {
-      needsSnap = true;
       var leftEdge = x - w / 2, rightEdge = x + w / 2;
       var targetX = sm.position.x;
-      if (Math.abs(leftEdge - targetX) < sm.epsilon) { snapX = targetX + w / 2; }
-      else if (Math.abs(rightEdge - targetX) < sm.epsilon) { snapX = targetX - w / 2; }
-      else { snapX = targetX; }
+      if (Math.abs(leftEdge - targetX) < sm.epsilon) { snapX = targetX + w / 2; needsSnap = true; }
+      else if (Math.abs(rightEdge - targetX) < sm.epsilon) { snapX = targetX - w / 2; needsSnap = true; }
+      else if (Math.abs(x - targetX) < sm.epsilon) { snapX = targetX; needsSnap = true; }
     }
     if (needsSnap && (snapX !== x || snapY !== y)) {
       return { x: snapX, y: snapY, snapped: true };
