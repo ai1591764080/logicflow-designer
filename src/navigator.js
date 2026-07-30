@@ -210,27 +210,24 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     wpsCenterCross.setAttribute('visibility', 'visible');
   }
 
-  // 获取节点真实包围盒（优先 getNodeBBox，回退 getData）
+  // 获取节点真实包围盒（统一用模型属性计算，避免 getNodeBBox 包含文本等额外空间）
   function wpsGetNodeBBox(node) {
-    if (node && typeof node.getNodeBBox === 'function') {
-      try {
-        var bbox = node.getNodeBBox();
-        // 圆形/菱形：直接用 r/rx/ry 计算 bbox（getNodeBBox 可能包含文本等额外空间）
-        var type = node.type || '';
-        if (type === 'circle' && node.r) {
-          var r = node.r;
-          bbox.width = r * 2;
-          bbox.height = r * 2;
-        } else if (type === 'diamond') {
-          var rx = node.rx || 40, ry = node.ry || 40;
-          bbox.width = rx * 2;
-          bbox.height = ry * 2;
-        }
-        return bbox;
-      } catch (e) {}
+    if (!node) return { x: 0, y: 0, width: 80, height: 60 };
+    var cx = node.x, cy = node.y;
+    var type = node.type || '';
+    var w, h;
+    if (type === 'circle' && node.r) {
+      w = node.r * 2; h = node.r * 2;
+    } else if (type === 'diamond') {
+      var rx = node.rx || 40, ry = node.ry || 40;
+      w = rx * 2; h = ry * 2;
+    } else {
+      // 矩形等：优先 getData 的 width/height（不含文本空间），回退 getNodeBBox
+      var d = node.getData ? node.getData() : null;
+      w = (d && d.width) || node.width || 80;
+      h = (d && d.height) || node.height || 60;
     }
-    var d = node.getData ? node.getData() : node;
-    return { x: d.x || 0, y: d.y || 0, width: d.width || 80, height: d.height || 60 };
+    return { x: cx, y: cy, width: w, height: h };
   }
 
   // 计算形状在指定 y 坐标处的实际宽度（圆形/菱形在边缘处比包围盒窄）
