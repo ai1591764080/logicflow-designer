@@ -78,7 +78,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     },
     // 箭头：清晰可见，且离节点保持距离
     arrow: { offset: 18, verticalLength: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
-    snapline: { stroke: '#555555', strokeWidth: 1, strokeDasharray: '3,3' }
+    snapline: { stroke: 'transparent', strokeWidth: 0 }
   });
 
   // 自定义滚轮缩放：以画布中心缩放（与按钮行为一致），不改变画布位置
@@ -87,12 +87,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (e.deltaY < 0) { lf.zoom(true); } else { lf.zoom(false); }
   }, { passive: false });
 
-  // ========== WPS 多线对齐系统（中心 + 上下边缘 / 左右边缘 同时显示） ==========
-  // LogicFlow 原生 SnaplineModel 只存一个 position，getSnapLinePosition 找到首个匹配就 break，
-  // 导致同一时刻只能显示一根线。此处向 SVG 直接注入自定义 <line> 元素实现多线同时显示。
+  // ========== WPS 多线对齐系统（中心 + 上下边缘 / 左右边缘 同时显示 + 磁吸） ==========
+  // 自定义 SVG 注入到画布 transform 组内，与节点共享同一坐标系（pan/zoom 自动同步）
   var wpsSnaplineGroup = null;
   var wpsHLines = {};  // center, top, bottom
   var wpsVLines = {};  // center, left, right
+  var wpsHMarkers = {}; // 水平线两端小方块
+  var wpsVMarkers = {}; // 垂直线两端小方块
+  var WPS_MARKER_SIZE = 5;
+  var WPS_EPS = 10; // 吸附容差(px)
+  var WPS_LINE_COLOR = '#ff4757'; // WPS 风格品红色
 
   function initWpsSnapline() {
     var svg = lf.container.querySelector('svg');
@@ -100,82 +104,191 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var ns = 'http://www.w3.org/2000/svg';
     wpsSnaplineGroup = document.createElementNS(ns, 'g');
     wpsSnaplineGroup.setAttribute('class', 'lf-wps-snapline');
-    var a = { stroke: '#1677ff', 'stroke-dasharray': '4,4', 'stroke-width': '1', 'pointer-events': 'none' };
+    wpsSnaplineGroup.setAttribute('pointer-events', 'none');
+    // 水平线: center / top / bottom
     ['center', 'top', 'bottom'].forEach(function (t) {
       var ln = document.createElementNS(ns, 'line');
-      Object.keys(a).forEach(function (k) { ln.setAttribute(k, a[k]); });
+      ln.setAttribute('stroke', WPS_LINE_COLOR);
+      ln.setAttribute('stroke-width', '1');
       ln.setAttribute('x1', '-100000'); ln.setAttribute('x2', '100000');
       ln.setAttribute('visibility', 'hidden');
-      wpsSnaplineGroup.appendChild(ln); wpsHLines[t] = ln;
+      wpsSnaplineGroup.appendChild(ln);
+      wpsHLines[t] = ln;
+      var m1 = document.createElementNS(ns, 'rect');
+      var m2 = document.createElementNS(ns, 'rect');
+      [m1, m2].forEach(function (m) {
+        m.setAttribute('width', WPS_MARKER_SIZE);
+        m.setAttribute('height', WPS_MARKER_SIZE);
+        m.setAttribute('fill', WPS_LINE_COLOR);
+        m.setAttribute('visibility', 'hidden');
+      });
+      wpsSnaplineGroup.appendChild(m1);
+      wpsSnaplineGroup.appendChild(m2);
+      wpsHMarkers[t] = [m1, m2];
     });
+    // 垂直线: center / left / right
     ['center', 'left', 'right'].forEach(function (t) {
       var ln = document.createElementNS(ns, 'line');
-      Object.keys(a).forEach(function (k) { ln.setAttribute(k, a[k]); });
+      ln.setAttribute('stroke', WPS_LINE_COLOR);
+      ln.setAttribute('stroke-width', '1');
       ln.setAttribute('y1', '-100000'); ln.setAttribute('y2', '100000');
       ln.setAttribute('visibility', 'hidden');
-      wpsSnaplineGroup.appendChild(ln); wpsVLines[t] = ln;
+      wpsSnaplineGroup.appendChild(ln);
+      wpsVLines[t] = ln;
+      var m1 = document.createElementNS(ns, 'rect');
+      var m2 = document.createElementNS(ns, 'rect');
+      [m1, m2].forEach(function (m) {
+        m.setAttribute('width', WPS_MARKER_SIZE);
+        m.setAttribute('height', WPS_MARKER_SIZE);
+        m.setAttribute('fill', WPS_LINE_COLOR);
+        m.setAttribute('visibility', 'hidden');
+      });
+      wpsSnaplineGroup.appendChild(m1);
+      wpsSnaplineGroup.appendChild(m2);
+      wpsVMarkers[t] = [m1, m2];
     });
-    svg.insertBefore(wpsSnaplineGroup, svg.firstChild);
+    // 关键：将辅助线组插入到画布 transform 组内（与节点共享坐标系）
+    var transformGroup = null;
+    var children = svg.children || svg.childNodes;
+    for (var i = 0; i < children.length; i++) {
+      var child = children[i];
+      if (child.tagName === 'g' && child.getAttribute('transform')) {
+        transformGroup = child;
+        break;
+      }
+    }
+    if (transformGroup) {
+      transformGroup.appendChild(wpsSnaplineGroup);
+    } else {
+      svg.appendChild(wpsSnaplineGroup);
+    }
   }
   initWpsSnapline();
 
-  // 扫描全部节点，找出所有对齐关系（不 break，全部检测）
+  function wpsHideSnapline() {
+    var k;
+    for (k in wpsHLines) {
+      wpsHLines[k].setAttribute('visibility', 'hidden');
+      wpsHMarkers[k][0].setAttribute('visibility', 'hidden');
+      wpsHMarkers[k][1].setAttribute('visibility', 'hidden');
+    }
+    for (k in wpsVLines) {
+      wpsVLines[k].setAttribute('visibility', 'hidden');
+      wpsVMarkers[k][0].setAttribute('visibility', 'hidden');
+      wpsVMarkers[k][1].setAttribute('visibility', 'hidden');
+    }
+  }
+
+  // 获取节点真实包围盒（优先 getNodeBBox，回退 getData）
+  function wpsGetNodeBBox(node) {
+    if (node && typeof node.getNodeBBox === 'function') {
+      try { return node.getNodeBBox(); } catch (e) {}
+    }
+    var d = node.getData ? node.getData() : node;
+    return { x: d.x || 0, y: d.y || 0, width: d.width || 80, height: d.height || 60 };
+  }
+
+  // 扫描全部节点，找出所有对齐关系（六线独立检测，不 break）
   function wpsComputeAlignments(nodeData, allNodes) {
     var x = nodeData.x, y = nodeData.y;
     var w = nodeData.width, h = nodeData.height;
-    var eps = 10;
+    if (!w || !h) {
+      var nodeModel = lf.graphModel.getNodeModelById(nodeData.id);
+      if (nodeModel) {
+        var bbox = wpsGetNodeBBox(nodeModel);
+        w = bbox.width; h = bbox.height;
+      }
+      if (!w) w = 80; if (!h) h = 60;
+    }
+    var eps = WPS_EPS;
     var topEdge = y - h / 2, bottomEdge = y + h / 2;
     var leftEdge = x - w / 2, rightEdge = x + w / 2;
-    var hR = { center: false, top: false, bottom: false };
-    var vR = { center: false, left: false, right: false };
+    var hR = { center: null, top: null, bottom: null };
+    var vR = { center: null, left: null, right: null };
 
     for (var i = 0; i < allNodes.length; i++) {
       var nd = allNodes[i];
       if (nd.id === nodeData.id) continue;
-      var nTop = nd.y - nd.height / 2, nBottom = nd.y + nd.height / 2;
-      var nLeft = nd.x - nd.width / 2, nRight = nd.x + nd.width / 2;
+      var refModel = lf.graphModel.getNodeModelById(nd.id);
+      var refBBox = refModel ? wpsGetNodeBBox(refModel) : { x: nd.x, y: nd.y, width: nd.width || 80, height: nd.height || 60 };
+      var nTop = refBBox.y - refBBox.height / 2;
+      var nBottom = refBBox.y + refBBox.height / 2;
+      var nLeft = refBBox.x - refBBox.width / 2;
+      var nRight = refBBox.x + refBBox.width / 2;
+      var nCx = refBBox.x, nCy = refBBox.y;
 
-      if (Math.abs(y - nd.y) < eps) hR.center = true;
-      if (Math.abs(topEdge - nTop) < eps || Math.abs(topEdge - nBottom) < eps) hR.top = true;
-      if (Math.abs(bottomEdge - nTop) < eps || Math.abs(bottomEdge - nBottom) < eps) hR.bottom = true;
-      if (Math.abs(x - nd.x) < eps) vR.center = true;
-      if (Math.abs(leftEdge - nLeft) < eps || Math.abs(leftEdge - nRight) < eps) vR.left = true;
-      if (Math.abs(rightEdge - nLeft) < eps || Math.abs(rightEdge - nRight) < eps) vR.right = true;
+      // 水平对齐: 中心线(y==nCy), 上边缘(topEdge==nTop/nBottom), 下边缘(bottomEdge==nTop/nBottom)
+      if (hR.center === null && Math.abs(y - nCy) < eps) hR.center = nCy;
+      if (hR.top === null) {
+        if (Math.abs(topEdge - nTop) < eps) hR.top = nTop;
+        else if (Math.abs(topEdge - nBottom) < eps) hR.top = nBottom;
+      }
+      if (hR.bottom === null) {
+        if (Math.abs(bottomEdge - nTop) < eps) hR.bottom = nTop;
+        else if (Math.abs(bottomEdge - nBottom) < eps) hR.bottom = nBottom;
+      }
+      // 垂直对齐: 中心线(x==nCx), 左边缘(leftEdge==nLeft/nRight), 右边缘(rightEdge==nLeft/nRight)
+      if (vR.center === null && Math.abs(x - nCx) < eps) vR.center = nCx;
+      if (vR.left === null) {
+        if (Math.abs(leftEdge - nLeft) < eps) vR.left = nLeft;
+        else if (Math.abs(leftEdge - nRight) < eps) vR.left = nRight;
+      }
+      if (vR.right === null) {
+        if (Math.abs(rightEdge - nLeft) < eps) vR.right = nLeft;
+        else if (Math.abs(rightEdge - nRight) < eps) vR.right = nRight;
+      }
     }
-    return { h: hR, v: vR, topEdge: topEdge, bottomEdge: bottomEdge, leftEdge: leftEdge, rightEdge: rightEdge, cx: x, cy: y };
+    return { h: hR, v: vR };
   }
 
+  // 渲染对齐辅助线 + 端点标记
   function wpsApplySnaplineVisual(align) {
-    var setH = function (k, yv) { wpsHLines[k].setAttribute('y1', yv); wpsHLines[k].setAttribute('y2', yv); wpsHLines[k].setAttribute('visibility', align.h[k] ? 'visible' : 'hidden'); };
-    var setV = function (k, xv) { wpsVLines[k].setAttribute('x1', xv); wpsVLines[k].setAttribute('x2', xv); wpsVLines[k].setAttribute('visibility', align.v[k] ? 'visible' : 'hidden'); };
-    setH('center', align.cy); setH('top', align.topEdge); setH('bottom', align.bottomEdge);
-    setV('center', align.cx); setV('left', align.leftEdge); setV('right', align.rightEdge);
+    var half = WPS_MARKER_SIZE / 2;
+    var EXT = 5000;
+    ['center', 'top', 'bottom'].forEach(function (k) {
+      var yVal = align.h[k];
+      if (yVal !== null && yVal !== false && yVal !== undefined) {
+        wpsHLines[k].setAttribute('y1', yVal);
+        wpsHLines[k].setAttribute('y2', yVal);
+        wpsHLines[k].setAttribute('visibility', 'visible');
+        wpsHMarkers[k][0].setAttribute('x', -EXT - half);
+        wpsHMarkers[k][0].setAttribute('y', yVal - half);
+        wpsHMarkers[k][0].setAttribute('visibility', 'visible');
+        wpsHMarkers[k][1].setAttribute('x', EXT - half);
+        wpsHMarkers[k][1].setAttribute('y', yVal - half);
+        wpsHMarkers[k][1].setAttribute('visibility', 'visible');
+      } else {
+        wpsHLines[k].setAttribute('visibility', 'hidden');
+        wpsHMarkers[k][0].setAttribute('visibility', 'hidden');
+        wpsHMarkers[k][1].setAttribute('visibility', 'hidden');
+      }
+    });
+    ['center', 'left', 'right'].forEach(function (k) {
+      var xVal = align.v[k];
+      if (xVal !== null && xVal !== false && xVal !== undefined) {
+        wpsVLines[k].setAttribute('x1', xVal);
+        wpsVLines[k].setAttribute('x2', xVal);
+        wpsVLines[k].setAttribute('visibility', 'visible');
+        wpsVMarkers[k][0].setAttribute('x', xVal - half);
+        wpsVMarkers[k][0].setAttribute('y', -EXT - half);
+        wpsVMarkers[k][0].setAttribute('visibility', 'visible');
+        wpsVMarkers[k][1].setAttribute('x', xVal - half);
+        wpsVMarkers[k][1].setAttribute('y', EXT - half);
+        wpsVMarkers[k][1].setAttribute('visibility', 'visible');
+      } else {
+        wpsVLines[k].setAttribute('visibility', 'hidden');
+        wpsVMarkers[k][0].setAttribute('visibility', 'hidden');
+        wpsVMarkers[k][1].setAttribute('visibility', 'hidden');
+      }
+    });
   }
 
-  function wpsHideSnapline() {
-    for (var k in wpsHLines) { wpsHLines[k].setAttribute('visibility', 'hidden'); }
-    for (var k in wpsVLines) { wpsVLines[k].setAttribute('visibility', 'hidden'); }
-  }
-
-  // 内部节点拖拽：多线视觉 + 磁吸对齐
-  lf.on('node:mousemove', function (_a) {
-    var data = _a.data;
-    if (currentMode !== 'design') return;
-    var nodeModel = lf.graphModel.getNodeModelById(data.id);
-    if (!nodeModel) return;
-    var nd = nodeModel.getData();
-    // 用真实坐标计算全部对齐线并更新自定义 SVG
-    var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
-    wpsApplySnaplineVisual(align);
-    // 同步原生 snaplineModel（DnD 磁吸依赖它），但以真实坐标重新计算
-    lf.setNodeSnapLine(nd);
+  // 磁吸对齐：根据原生 snaplineModel 修正节点坐标
+  function wpsApplyMagneticSnap(nodeId, x, y, w, h) {
     var sm = lf.snaplineModel;
-    if (!sm) return;
-    var x = nd.x, y = nd.y;
-    var w = nd.width, h = nd.height;
+    if (!sm) return { x: x, y: y, snapped: false };
     var snapX = x, snapY = y;
     var needsSnap = false;
-
     if (sm.isShowHorizontal) {
       needsSnap = true;
       var topEdge = y - h / 2, bottomEdge = y + h / 2;
@@ -192,10 +305,29 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       else if (Math.abs(rightEdge - targetX) < sm.epsilon) { snapX = targetX - w / 2; }
       else { snapX = targetX; }
     }
-
     if (needsSnap && (snapX !== x || snapY !== y)) {
-      lf.graphModel.moveNode2Coordinate(data.id, snapX, snapY);
+      return { x: snapX, y: snapY, snapped: true };
+    }
+    return { x: x, y: y, snapped: false };
+  }
+
+  // 内部节点拖拽：多线视觉 + 磁吸对齐
+  lf.on('node:mousemove', function (_a) {
+    var data = _a.data;
+    if (currentMode !== 'design') return;
+    var nodeModel = lf.graphModel.getNodeModelById(data.id);
+    if (!nodeModel) return;
+    var bbox = wpsGetNodeBBox(nodeModel);
+    var nd = { id: data.id, x: nodeModel.x, y: nodeModel.y, width: bbox.width, height: bbox.height };
+    var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
+    wpsApplySnaplineVisual(align);
+    lf.setNodeSnapLine(nd);
+    var snap = wpsApplyMagneticSnap(data.id, nd.x, nd.y, nd.width, nd.height);
+    if (snap.snapped) {
+      lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
       var updated = nodeModel.getData();
+      updated.width = bbox.width;
+      updated.height = bbox.height;
       var align2 = wpsComputeAlignments(updated, lf.graphModel.nodes);
       wpsApplySnaplineVisual(align2);
       lf.setNodeSnapLine(updated);
@@ -203,6 +335,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   });
 
   lf.on('node:mouseup', function () { wpsHideSnapline(); });
+  lf.on('node:drop', function () { wpsHideSnapline(); });
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
