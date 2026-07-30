@@ -420,32 +420,39 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
   // 内部节点拖拽：多线视觉 + 磁吸对齐
+  var wpsLastRawX = 0, wpsLastRawY = 0; // 记录原始鼠标canvas坐标（磁吸前）
   lf.on('node:mousemove', function (_a) {
     var data = _a.data;
     var e = _a.e;
     if (currentMode !== 'design') return;
-    // 只左键按下时才执行对齐逻辑（真正拖拽中）
     if (!e || e.buttons !== 1) return;
     var nodeModel = lf.graphModel.getNodeModelById(data.id);
     if (!nodeModel) return;
     var bbox = wpsGetNodeBBox(nodeModel);
     var w = bbox.width, h = bbox.height;
-    var x = nodeModel.x, y = nodeModel.y;
 
-    // 计算对齐线并显示
-    var nd = { id: data.id, x: x, y: y, width: w, height: h };
+    // 用原始鼠标canvas坐标计算对齐线（避免磁吸后位置改变导致边缘对齐丢失）
+    var rawPoint = lf.getPointByClient(e.clientX, e.clientY);
+    var rawX = rawPoint.canvasOverlayPosition.x;
+    var rawY = rawPoint.canvasOverlayPosition.y;
+    wpsLastRawX = rawX;
+    wpsLastRawY = rawY;
+
+    // 基于原始鼠标位置计算对齐线
+    var nd = { id: data.id, x: rawX, y: rawY, width: w, height: h };
     var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
     wpsApplySnaplineVisual(align);
-    wpsUpdateCenterCross(x, y);
+    wpsUpdateCenterCross(rawX, rawY);
     // 同步原生 snapline（用于磁吸检测）
     lf.setNodeSnapLine(nd);
-    // 磁吸
-    var snap = wpsApplyMagneticSnap(data.id, x, y, w, h);
+    // 磁吸：基于原始位置计算磁吸目标
+    var snap = wpsApplyMagneticSnap(data.id, rawX, rawY, w, h);
     if (snap.snapped) {
       lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
       wpsUpdateCenterCross(snap.x, snap.y);
+      // 磁吸后用原始位置重新计算对齐线（保持三条线可见）
       var align2 = wpsComputeAlignments(
-        { id: data.id, x: snap.x, y: snap.y, width: w, height: h },
+        { id: data.id, x: rawX, y: rawY, width: w, height: h },
         lf.graphModel.nodes
       );
       wpsApplySnaplineVisual(align2);
