@@ -96,10 +96,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     // ========== 内部节点拖拽磁吸对齐（WPS 流程图风格） ==========
     lf.on('node:mousemove', function (_a) {
         var data = _a.data;
-        var sm = lf.snaplineModel;
-        if (!sm) return;
         var nodeModel = lf.graphModel.getNodeModelById(data.id);
         if (!nodeModel) return;
+        // 用节点真实当前位置重新计算对齐线（修复 StepDrag 传入旧坐标导致中心对齐失效）
+        lf.setNodeSnapLine(nodeModel.getData());
+        var sm = lf.snaplineModel;
+        if (!sm) return;
         var x = nodeModel.x, y = nodeModel.y;
         var w = nodeModel.width, h = nodeModel.height;
         var snapX = x, snapY = y;

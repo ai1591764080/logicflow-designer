@@ -88,15 +88,17 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }, { passive: false });
 
   // ========== 内部节点拖拽磁吸对齐（WPS 流程图风格） ==========
-  // LogicFlow 的 StepDrag 在拖拽过程中发出 node:mousemove 事件，
-  // snapline 行为已据此更新对齐线模型，此处补上磁吸咬合逻辑
+  // LogicFlow 的 StepDrag 在 onDragging 移动节点前捕获旧坐标发出 node:mousemove，
+  // 导致 snapline 中心对齐检测使用错误位置。此处用真实坐标重新计算后再磁吸。
   lf.on('node:mousemove', function (_a) {
     var data = _a.data;
     if (currentMode !== 'design') return;
-    var sm = lf.snaplineModel;
-    if (!sm) return;
     var nodeModel = lf.graphModel.getNodeModelById(data.id);
     if (!nodeModel) return;
+    // 用节点真实当前位置重新计算对齐线（修复 StepDrag 传入旧坐标导致中心对齐失效）
+    lf.setNodeSnapLine(nodeModel.getData());
+    var sm = lf.snaplineModel;
+    if (!sm) return;
     var x = nodeModel.x, y = nodeModel.y;
     var w = nodeModel.width, h = nodeModel.height;
     var snapX = x, snapY = y;
