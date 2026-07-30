@@ -357,12 +357,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (snap.snapped) {
       lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
       wpsUpdateCenterCross(snap.x, snap.y);
+      // 磁吸后只刷新视觉辅助线，不再调用 setNodeSnapLine
+      // 避免在吸附位置重新检测导致反馈循环（左右摆动）
       var updated = nodeModel.getData();
       updated.width = bbox.width;
       updated.height = bbox.height;
       var align2 = wpsComputeAlignments(updated, lf.graphModel.nodes);
       wpsApplySnaplineVisual(align2);
-      lf.setNodeSnapLine(updated);
     }
   });
 
@@ -1247,13 +1248,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             }
             if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
           }
-          // 咬合后刷新对齐线
+          // 咬合后刷新对齐线（不再调用 setNodeSnapLine 避免反馈循环）
           if (didSnap) {
             var fd2 = draggingNode.getData();
             var fAlign2 = wpsComputeAlignments(fd2, lf.graphModel.nodes);
             wpsApplySnaplineVisual(fAlign2);
             wpsUpdateCenterCross(draggingNode.x, draggingNode.y);
-            lf.setNodeSnapLine(fd2);
           }
         }
       }
