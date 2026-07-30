@@ -1372,12 +1372,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
   };
 
-  // 设置 → 切换到选中分组的设计模式（不重新加载数据，仅切换模式）
+  // 设置 → 切换到设计模式，加载服务器保存的数据
   var btnConfig = document.getElementById('btn-config');
   if (btnConfig) btnConfig.onclick = function () {
     if (!currentGroupId) return layer.msg('请先选择一个导航分组', { icon: 2 });
     designGroupId = currentGroupId;
     switchMode('design');
+    loadGroupFlow(currentGroupId);
   };
 
   // 取消 → 回到查看模式，重新加载保存的数据（丢弃未保存修改）
