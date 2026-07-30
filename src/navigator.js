@@ -81,20 +81,6 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     snapline: { stroke: '#555555', strokeWidth: 1, strokeDasharray: '3,3' }
   });
 
-  // 全局拦截 getSnapLinePosition：仅边缘对齐（顶部/底部/左侧/右侧），无中心对齐
-  (function() {
-    lf.snaplineModel.getSnapLinePosition = function(nodeData, nodes) {
-      // 直接复用 LogicFlow 原生的边缘检测方法（它们通过 getNodeBBox 正确获取节点尺寸）
-      var hInfo = this.getHorizontalSnapline(nodeData, nodes);
-      var vInfo = this.getVerticalSnapline(nodeData, nodes);
-      return {
-        isShowHorizontal: hInfo.isShowHorizontal,
-        isShowVertical: vInfo.isShowVertical,
-        position: { x: vInfo.position.x, y: hInfo.position.y }
-      };
-    };
-  })();
-
   // 自定义滚轮缩放：以画布中心缩放（与按钮行为一致），不改变画布位置
   container.addEventListener('wheel', function (e) {
     e.preventDefault();
