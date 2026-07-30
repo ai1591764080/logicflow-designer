@@ -94,7 +94,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   var wpsVLines = {};  // center, left, right
   var wpsHMarkers = {}; // 水平线两端小方块
   var wpsVMarkers = {}; // 垂直线两端小方块
+  var wpsCenterCross = null; // 拖拽节点中心十字准星
   var WPS_MARKER_SIZE = 5;
+  var WPS_CROSS_ARM = 8; // 准星臂长(px)
   var WPS_EPS = 10; // 吸附容差(px)
   var WPS_LINE_COLOR = '#ff4757'; // WPS 风格品红色
 
@@ -147,6 +149,26 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       wpsSnaplineGroup.appendChild(m2);
       wpsVMarkers[t] = [m1, m2];
     });
+    // 拖拽节点中心十字准星
+    wpsCenterCross = document.createElementNS(ns, 'g');
+    wpsCenterCross.setAttribute('visibility', 'hidden');
+    var chH = document.createElementNS(ns, 'line');
+    var chV = document.createElementNS(ns, 'line');
+    var chDot = document.createElementNS(ns, 'circle');
+    [chH, chV].forEach(function (l) {
+      l.setAttribute('stroke', WPS_LINE_COLOR);
+      l.setAttribute('stroke-width', '1.5');
+    });
+    chH.setAttribute('x1', -WPS_CROSS_ARM); chH.setAttribute('x2', WPS_CROSS_ARM);
+    chH.setAttribute('y1', 0); chH.setAttribute('y2', 0);
+    chV.setAttribute('x1', 0); chV.setAttribute('x2', 0);
+    chV.setAttribute('y1', -WPS_CROSS_ARM); chV.setAttribute('y2', WPS_CROSS_ARM);
+    chDot.setAttribute('r', '2');
+    chDot.setAttribute('fill', WPS_LINE_COLOR);
+    wpsCenterCross.appendChild(chH);
+    wpsCenterCross.appendChild(chV);
+    wpsCenterCross.appendChild(chDot);
+    wpsSnaplineGroup.appendChild(wpsCenterCross);
     // 关键：将辅助线组插入到画布 transform 组内（与节点共享坐标系）
     var transformGroup = null;
     var children = svg.children || svg.childNodes;
@@ -177,6 +199,14 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       wpsVMarkers[k][0].setAttribute('visibility', 'hidden');
       wpsVMarkers[k][1].setAttribute('visibility', 'hidden');
     }
+    if (wpsCenterCross) wpsCenterCross.setAttribute('visibility', 'hidden');
+  }
+
+  // 更新拖拽节点中心准星位置
+  function wpsUpdateCenterCross(x, y) {
+    if (!wpsCenterCross) return;
+    wpsCenterCross.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+    wpsCenterCross.setAttribute('visibility', 'visible');
   }
 
   // 获取节点真实包围盒（优先 getNodeBBox，回退 getData）
@@ -321,10 +351,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var nd = { id: data.id, x: nodeModel.x, y: nodeModel.y, width: bbox.width, height: bbox.height };
     var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
     wpsApplySnaplineVisual(align);
+    wpsUpdateCenterCross(nodeModel.x, nodeModel.y);
     lf.setNodeSnapLine(nd);
     var snap = wpsApplyMagneticSnap(data.id, nd.x, nd.y, nd.width, nd.height);
     if (snap.snapped) {
       lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
+      wpsUpdateCenterCross(snap.x, snap.y);
       var updated = nodeModel.getData();
       updated.width = bbox.width;
       updated.height = bbox.height;
@@ -1179,6 +1211,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       // 更新假节点位置与吸附线
       if (draggingNode) {
         draggingNode.moveTo(x, y);
+        wpsUpdateCenterCross(x, y);
         var fd = draggingNode.getData();
         var fAlign = wpsComputeAlignments(fd, lf.graphModel.nodes);
         wpsApplySnaplineVisual(fAlign);
@@ -1219,6 +1252,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             var fd2 = draggingNode.getData();
             var fAlign2 = wpsComputeAlignments(fd2, lf.graphModel.nodes);
             wpsApplySnaplineVisual(fAlign2);
+            wpsUpdateCenterCross(draggingNode.x, draggingNode.y);
             lf.setNodeSnapLine(fd2);
           }
         }
