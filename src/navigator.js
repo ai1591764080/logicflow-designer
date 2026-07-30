@@ -87,60 +87,122 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     if (e.deltaY < 0) { lf.zoom(true); } else { lf.zoom(false); }
   }, { passive: false });
 
-  // ========== 内部节点拖拽磁吸对齐（WPS 流程图风格） ==========
-  // LogicFlow 的 StepDrag 在 onDragging 移动节点前捕获旧坐标发出 node:mousemove，
-  // 导致 snapline 中心对齐检测使用错误位置。此处用真实坐标重新计算后再磁吸。
+  // ========== WPS 多线对齐系统（中心 + 上下边缘 / 左右边缘 同时显示） ==========
+  // LogicFlow 原生 SnaplineModel 只存一个 position，getSnapLinePosition 找到首个匹配就 break，
+  // 导致同一时刻只能显示一根线。此处向 SVG 直接注入自定义 <line> 元素实现多线同时显示。
+  var wpsSnaplineGroup = null;
+  var wpsHLines = {};  // center, top, bottom
+  var wpsVLines = {};  // center, left, right
+
+  function initWpsSnapline() {
+    var svg = lf.container.querySelector('svg');
+    if (!svg) { setTimeout(initWpsSnapline, 100); return; }
+    var ns = 'http://www.w3.org/2000/svg';
+    wpsSnaplineGroup = document.createElementNS(ns, 'g');
+    wpsSnaplineGroup.setAttribute('class', 'lf-wps-snapline');
+    var a = { stroke: '#1677ff', 'stroke-dasharray': '4,4', 'stroke-width': '1', 'pointer-events': 'none' };
+    ['center', 'top', 'bottom'].forEach(function (t) {
+      var ln = document.createElementNS(ns, 'line');
+      Object.keys(a).forEach(function (k) { ln.setAttribute(k, a[k]); });
+      ln.setAttribute('x1', '-100000'); ln.setAttribute('x2', '100000');
+      ln.setAttribute('visibility', 'hidden');
+      wpsSnaplineGroup.appendChild(ln); wpsHLines[t] = ln;
+    });
+    ['center', 'left', 'right'].forEach(function (t) {
+      var ln = document.createElementNS(ns, 'line');
+      Object.keys(a).forEach(function (k) { ln.setAttribute(k, a[k]); });
+      ln.setAttribute('y1', '-100000'); ln.setAttribute('y2', '100000');
+      ln.setAttribute('visibility', 'hidden');
+      wpsSnaplineGroup.appendChild(ln); wpsVLines[t] = ln;
+    });
+    svg.insertBefore(wpsSnaplineGroup, svg.firstChild);
+  }
+  initWpsSnapline();
+
+  // 扫描全部节点，找出所有对齐关系（不 break，全部检测）
+  function wpsComputeAlignments(nodeData, allNodes) {
+    var x = nodeData.x, y = nodeData.y;
+    var w = nodeData.width, h = nodeData.height;
+    var eps = 10;
+    var topEdge = y - h / 2, bottomEdge = y + h / 2;
+    var leftEdge = x - w / 2, rightEdge = x + w / 2;
+    var hR = { center: false, top: false, bottom: false };
+    var vR = { center: false, left: false, right: false };
+
+    for (var i = 0; i < allNodes.length; i++) {
+      var nd = allNodes[i];
+      if (nd.id === nodeData.id) continue;
+      var nTop = nd.y - nd.height / 2, nBottom = nd.y + nd.height / 2;
+      var nLeft = nd.x - nd.width / 2, nRight = nd.x + nd.width / 2;
+
+      if (Math.abs(y - nd.y) < eps) hR.center = true;
+      if (Math.abs(topEdge - nTop) < eps || Math.abs(topEdge - nBottom) < eps) hR.top = true;
+      if (Math.abs(bottomEdge - nTop) < eps || Math.abs(bottomEdge - nBottom) < eps) hR.bottom = true;
+      if (Math.abs(x - nd.x) < eps) vR.center = true;
+      if (Math.abs(leftEdge - nLeft) < eps || Math.abs(leftEdge - nRight) < eps) vR.left = true;
+      if (Math.abs(rightEdge - nLeft) < eps || Math.abs(rightEdge - nRight) < eps) vR.right = true;
+    }
+    return { h: hR, v: vR, topEdge: topEdge, bottomEdge: bottomEdge, leftEdge: leftEdge, rightEdge: rightEdge, cx: x, cy: y };
+  }
+
+  function wpsApplySnaplineVisual(align) {
+    var setH = function (k, yv) { wpsHLines[k].setAttribute('y1', yv); wpsHLines[k].setAttribute('y2', yv); wpsHLines[k].setAttribute('visibility', align.h[k] ? 'visible' : 'hidden'); };
+    var setV = function (k, xv) { wpsVLines[k].setAttribute('x1', xv); wpsVLines[k].setAttribute('x2', xv); wpsVLines[k].setAttribute('visibility', align.v[k] ? 'visible' : 'hidden'); };
+    setH('center', align.cy); setH('top', align.topEdge); setH('bottom', align.bottomEdge);
+    setV('center', align.cx); setV('left', align.leftEdge); setV('right', align.rightEdge);
+  }
+
+  function wpsHideSnapline() {
+    for (var k in wpsHLines) { wpsHLines[k].setAttribute('visibility', 'hidden'); }
+    for (var k in wpsVLines) { wpsVLines[k].setAttribute('visibility', 'hidden'); }
+  }
+
+  // 内部节点拖拽：多线视觉 + 磁吸对齐
   lf.on('node:mousemove', function (_a) {
     var data = _a.data;
     if (currentMode !== 'design') return;
     var nodeModel = lf.graphModel.getNodeModelById(data.id);
     if (!nodeModel) return;
-    // 用节点真实当前位置重新计算对齐线（修复 StepDrag 传入旧坐标导致中心对齐失效）
-    lf.setNodeSnapLine(nodeModel.getData());
+    var nd = nodeModel.getData();
+    // 用真实坐标计算全部对齐线并更新自定义 SVG
+    var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
+    wpsApplySnaplineVisual(align);
+    // 同步原生 snaplineModel（DnD 磁吸依赖它），但以真实坐标重新计算
+    lf.setNodeSnapLine(nd);
     var sm = lf.snaplineModel;
     if (!sm) return;
-    var x = nodeModel.x, y = nodeModel.y;
-    var w = nodeModel.width, h = nodeModel.height;
+    var x = nd.x, y = nd.y;
+    var w = nd.width, h = nd.height;
     var snapX = x, snapY = y;
     var needsSnap = false;
 
-    // 水平方向磁吸：中心对齐 / 顶部边缘对齐 / 底部边缘对齐
     if (sm.isShowHorizontal) {
       needsSnap = true;
-      var topEdge = y - h / 2;
-      var bottomEdge = y + h / 2;
+      var topEdge = y - h / 2, bottomEdge = y + h / 2;
       var targetY = sm.position.y;
-      if (Math.abs(topEdge - targetY) < sm.epsilon) {
-        snapY = targetY + h / 2;   // 顶部对齐 → 向下咬合
-      } else if (Math.abs(bottomEdge - targetY) < sm.epsilon) {
-        snapY = targetY - h / 2;   // 底部对齐 → 向上咬合
-      } else {
-        snapY = targetY;            // 中心对齐
-      }
+      if (Math.abs(topEdge - targetY) < sm.epsilon) { snapY = targetY + h / 2; }
+      else if (Math.abs(bottomEdge - targetY) < sm.epsilon) { snapY = targetY - h / 2; }
+      else { snapY = targetY; }
     }
-
-    // 垂直方向磁吸：中心对齐 / 左侧边缘对齐 / 右侧边缘对齐
     if (sm.isShowVertical) {
       needsSnap = true;
-      var leftEdge = x - w / 2;
-      var rightEdge = x + w / 2;
+      var leftEdge = x - w / 2, rightEdge = x + w / 2;
       var targetX = sm.position.x;
-      if (Math.abs(leftEdge - targetX) < sm.epsilon) {
-        snapX = targetX + w / 2;   // 左侧对齐 → 向右咬合
-      } else if (Math.abs(rightEdge - targetX) < sm.epsilon) {
-        snapX = targetX - w / 2;   // 右侧对齐 → 向左咬合
-      } else {
-        snapX = targetX;            // 中心对齐
-      }
+      if (Math.abs(leftEdge - targetX) < sm.epsilon) { snapX = targetX + w / 2; }
+      else if (Math.abs(rightEdge - targetX) < sm.epsilon) { snapX = targetX - w / 2; }
+      else { snapX = targetX; }
     }
 
     if (needsSnap && (snapX !== x || snapY !== y)) {
       lf.graphModel.moveNode2Coordinate(data.id, snapX, snapY);
-      // 咬合后刷新对齐线，确保视觉与位置一致
-      var updatedData = nodeModel.getData();
-      lf.setNodeSnapLine(updatedData);
+      var updated = nodeModel.getData();
+      var align2 = wpsComputeAlignments(updated, lf.graphModel.nodes);
+      wpsApplySnaplineVisual(align2);
+      lf.setNodeSnapLine(updated);
     }
   });
+
+  lf.on('node:mouseup', function () { wpsHideSnapline(); });
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
@@ -954,6 +1016,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     item.addEventListener('dragend', function () {
       draggingType = '';
       lf.removeNodeSnapLine();
+      wpsHideSnapline();
       if (draggingNode) {
         lf.graphModel.removeFakeNode();
         draggingNode = null;
@@ -983,7 +1046,10 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       // 更新假节点位置与吸附线
       if (draggingNode) {
         draggingNode.moveTo(x, y);
-        lf.setNodeSnapLine(draggingNode.getData());
+        var fd = draggingNode.getData();
+        var fAlign = wpsComputeAlignments(fd, lf.graphModel.nodes);
+        wpsApplySnaplineVisual(fAlign);
+        lf.setNodeSnapLine(fd);
         // 磁吸：对齐线亮起时修正假节点位置（区分中心/上下左右边缘）
         var sm = lf.snaplineModel;
         if (sm) {
@@ -1016,7 +1082,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
           }
           // 咬合后刷新对齐线
-          if (didSnap) lf.setNodeSnapLine(draggingNode.getData());
+          if (didSnap) {
+            var fd2 = draggingNode.getData();
+            var fAlign2 = wpsComputeAlignments(fd2, lf.graphModel.nodes);
+            wpsApplySnaplineVisual(fAlign2);
+            lf.setNodeSnapLine(fd2);
+          }
         }
       }
     }
@@ -1048,6 +1119,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       properties: { owner: '', desc: '', fill: '', stroke: '', strokeWidth: '', module: '' }
     });
     lf.removeNodeSnapLine();
+    wpsHideSnapline();
     if (draggingNode) {
       lf.graphModel.removeFakeNode();
       draggingNode = null;
