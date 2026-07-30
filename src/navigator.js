@@ -437,14 +437,16 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     var nd = { id: data.id, x: rawX, y: rawY, width: w, height: h };
     var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
     wpsApplySnaplineVisual(align);
-    wpsUpdateCenterCross(rawX, rawY);
+    // 十字准星始终在节点实际中心
+    wpsUpdateCenterCross(nodeModel.x, nodeModel.y);
     // 同步原生 snapline（用于磁吸检测）
     lf.setNodeSnapLine(nd);
     // 磁吸：基于原始位置计算磁吸目标
     var snap = wpsApplyMagneticSnap(data.id, rawX, rawY, w, h);
     if (snap.snapped) {
       lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
-      wpsUpdateCenterCross(snap.x, snap.y);
+      // 磁吸后十字准星跟随节点新中心
+      wpsUpdateCenterCross(nodeModel.x, nodeModel.y);
       // 磁吸后用原始位置重新计算对齐线（保持三条线可见）
       var align2 = wpsComputeAlignments(
         { id: data.id, x: rawX, y: rawY, width: w, height: h },
