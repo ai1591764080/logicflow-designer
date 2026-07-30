@@ -343,33 +343,27 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   }
 
   // 内部节点拖拽：多线视觉 + 磁吸对齐
-  var _wpsDraggingNodeId = null; // 追踪当前正在拖拽的节点
-
-  lf.on('node:dragstart', function (_a) {
-    if (currentMode !== 'design') return;
-    _wpsDraggingNodeId = _a.data.id;
-  });
-
   lf.on('node:mousemove', function (_a) {
     var data = _a.data;
+    var e = _a.e;
     if (currentMode !== 'design') return;
-    // 只在真正拖拽时才执行对齐逻辑，避免干扰正常悬停/点击
-    if (_wpsDraggingNodeId !== data.id) return;
+    // 只左键按下时才执行对齐逻辑（真正拖拽中）
+    if (!e || e.buttons !== 1) return;
     var nodeModel = lf.graphModel.getNodeModelById(data.id);
     if (!nodeModel) return;
     var bbox = wpsGetNodeBBox(nodeModel);
     var w = bbox.width, h = bbox.height;
+    var x = nodeModel.x, y = nodeModel.y;
 
-    // 先将节点移到鼠标位置，确保原生 snapline 检测始终基于鼠标坐标
-    lf.graphModel.moveNode2Coordinate(data.id, data.x, data.y);
-
-    var nd = { id: data.id, x: data.x, y: data.y, width: w, height: h };
+    // 计算对齐线并显示
+    var nd = { id: data.id, x: x, y: y, width: w, height: h };
     var align = wpsComputeAlignments(nd, lf.graphModel.nodes);
     wpsApplySnaplineVisual(align);
-    wpsUpdateCenterCross(data.x, data.y);
+    wpsUpdateCenterCross(x, y);
+    // 同步原生 snapline（用于磁吸检测）
     lf.setNodeSnapLine(nd);
-
-    var snap = wpsApplyMagneticSnap(data.id, data.x, data.y, w, h);
+    // 磁吸
+    var snap = wpsApplyMagneticSnap(data.id, x, y, w, h);
     if (snap.snapped) {
       lf.graphModel.moveNode2Coordinate(data.id, snap.x, snap.y);
       wpsUpdateCenterCross(snap.x, snap.y);
@@ -381,9 +375,9 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     }
   });
 
-  lf.on('node:mouseup', function () { _wpsDraggingNodeId = null; wpsHideSnapline(); });
-  lf.on('node:drop', function () { _wpsDraggingNodeId = null; wpsHideSnapline(); });
-  lf.on('node:mouseleave', function () { if (!_wpsDraggingNodeId) wpsHideSnapline(); });
+  lf.on('node:mouseup', function () { wpsHideSnapline(); });
+  lf.on('node:drop', function () { wpsHideSnapline(); });
+  lf.on('node:mouseleave', function () { wpsHideSnapline(); });
 
   // ========== 注册基础图形节点类型（无流程节点） ==========
   class BaseRectModel extends RectNodeModel {
