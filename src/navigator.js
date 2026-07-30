@@ -535,13 +535,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (retData && retData !== '') {
           try {
             var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
-            // 保存当前画布平移位置，render 后恢复（缩放已自动重置为 100%）
-            var tm = lf.graphModel.transformModel;
-            var savedTX = tm.TRANSLATE_X, savedTY = tm.TRANSLATE_Y;
             lf.render(data);
-            tm.TRANSLATE_X = savedTX;
-            tm.TRANSLATE_Y = savedTY;
-            tm.emitGraphTransform('zoom');
           } catch (e) {
             lf.render({ nodes: [], edges: [] });
           }
@@ -562,6 +556,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // ========== 模式切换 ==========
   function switchMode(mode) {
     currentMode = mode;
+    // 切换模式时重置缩放为 100%
+    lf.resetZoom();
     var body = document.body;
     body.classList.remove('mode-view', 'mode-design');
     body.classList.add('mode-' + mode);
@@ -1363,21 +1359,29 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
   };
 
-  // 设置 → 切换到选中分组的设计模式
+  // 设置 → 切换到选中分组的设计模式（不重新加载数据，仅切换模式）
   var btnConfig = document.getElementById('btn-config');
   if (btnConfig) btnConfig.onclick = function () {
     if (!currentGroupId) return layer.msg('请先选择一个导航分组', { icon: 2 });
     designGroupId = currentGroupId;
     switchMode('design');
-    loadGroupFlow(currentGroupId);
   };
 
-  // 取消（占位）
+  // 取消 → 回到查看模式，重新加载保存的数据（丢弃未保存修改）
   var btnCancel = document.getElementById('btn-cancel');
   if (btnCancel) btnCancel.onclick = function () {
+    // 保存当前画布位置，loadGroupFlow 中的 render 会重置 translate
+    var tm = lf.graphModel.transformModel;
+    var savedTX = tm.TRANSLATE_X, savedTY = tm.TRANSLATE_Y;
     switchMode('view');
-    // 重新加载当前分组的流程图
     if (currentGroupId) loadGroupFlow(currentGroupId);
+    // 延迟恢复画布位置，确保 render 和 resize 已完成
+    setTimeout(function () {
+      var tm2 = lf.graphModel.transformModel;
+      tm2.TRANSLATE_X = savedTX;
+      tm2.TRANSLATE_Y = savedTY;
+      tm2.emitGraphTransform('zoom');
+    }, 200);
   };
 
   // 设置分组按钮（左侧底部）
