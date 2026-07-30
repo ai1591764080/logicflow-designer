@@ -213,7 +213,21 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // 获取节点真实包围盒（优先 getNodeBBox，回退 getData）
   function wpsGetNodeBBox(node) {
     if (node && typeof node.getNodeBBox === 'function') {
-      try { return node.getNodeBBox(); } catch (e) {}
+      try {
+        var bbox = node.getNodeBBox();
+        // 圆形/菱形：确保 bbox 尺寸与 r/rx/ry 一致（防止 width/height 与半径不同步）
+        var type = node.type || '';
+        if (type === 'circle' && node.r) {
+          var r = node.r;
+          bbox.width = Math.max(bbox.width || 0, r * 2);
+          bbox.height = Math.max(bbox.height || 0, r * 2);
+        } else if (type === 'diamond') {
+          var rx = node.rx || 40, ry = node.ry || 40;
+          bbox.width = Math.max(bbox.width || 0, rx * 2);
+          bbox.height = Math.max(bbox.height || 0, ry * 2);
+        }
+        return bbox;
+      } catch (e) {}
     }
     var d = node.getData ? node.getData() : node;
     return { x: d.x || 0, y: d.y || 0, width: d.width || 80, height: d.height || 60 };
