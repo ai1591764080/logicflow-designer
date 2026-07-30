@@ -51,7 +51,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         keyboard: { enabled: true },
         edgeType: 'custom-bezier',
         stopScrollGraph: true,
-        stopZoomGraph: false,
+        stopZoomGraph: true,
         adjustEdge: true,
         adjustEdgeMiddle: true,
         adjustEdgeStartAndEnd: true,
@@ -100,6 +100,12 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
             };
         };
     })();
+
+    // 自定义滚轮缩放：以画布中心缩放（与按钮行为一致），不改变画布位置
+    container.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        if (e.deltaY < 0) { lf.zoom(true); } else { lf.zoom(false); }
+    }, { passive: false });
 
     // ========== 注册基础图形节点类型（无流程节点） ==========
     class BaseRectModel extends RectNodeModel {
