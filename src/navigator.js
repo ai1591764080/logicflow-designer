@@ -41,6 +41,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
   // ========== 当前模式: view | design ==========
   var currentMode = 'view';
   var designGroupId = null; // 当前设计中的分组ID
+  var lastSavedSnapshot = null; // 上次加载/保存时的画布快照，用于模式切换恢复
 
   // ========== 初始化 LogicFlow（可编辑配置） ==========
   var container = document.querySelector('#graph');
@@ -541,6 +542,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (retData && retData !== '') {
           try {
             var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+            // 保存快照，用于模式切换时恢复
+            lastSavedSnapshot = JSON.parse(JSON.stringify(data));
             lf.render(data);
             // 恢复保存的画布平移位置（但不恢复缩放，始终保持 100%）
             if (data.transform) {
@@ -550,9 +553,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
               tm.emitGraphTransform('zoom');
             }
           } catch (e) {
+            lastSavedSnapshot = { nodes: [], edges: [] };
             lf.render({ nodes: [], edges: [] });
           }
         } else {
+          lastSavedSnapshot = { nodes: [], edges: [] };
           lf.render({ nodes: [], edges: [] });
         }
         setTimeout(function() { lf.resize(); updateEmptyState(); }, 100);
@@ -562,6 +567,24 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         setTimeout(updateEmptyState, 100);
       }
     });
+    setTimeout(function() { lf.resize(); updateEmptyState(); }, 100);
+    clearPanel();
+  }
+
+  // 从快照恢复画布（不请求服务器）
+  function restoreFromSnapshot() {
+    if (!lastSavedSnapshot) {
+      lf.render({ nodes: [], edges: [] });
+    } else {
+      lf.render(lastSavedSnapshot);
+      // 恢复保存的平移位置（不恢复缩放）
+      if (lastSavedSnapshot.transform) {
+        var tm = lf.graphModel.transformModel;
+        tm.TRANSLATE_X = lastSavedSnapshot.transform.TRANSLATE_X;
+        tm.TRANSLATE_Y = lastSavedSnapshot.transform.TRANSLATE_Y;
+        tm.emitGraphTransform('zoom');
+      }
+    }
     setTimeout(function() { lf.resize(); updateEmptyState(); }, 100);
     clearPanel();
   }
@@ -1372,30 +1395,20 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
     });
   };
 
-  // 设置 → 切换到设计模式，加载服务器保存的数据
+  // 设置 → 切换到设计模式，从快照恢复画布（不请求服务器）
   var btnConfig = document.getElementById('btn-config');
   if (btnConfig) btnConfig.onclick = function () {
     if (!currentGroupId) return layer.msg('请先选择一个导航分组', { icon: 2 });
     designGroupId = currentGroupId;
     switchMode('design');
-    loadGroupFlow(currentGroupId);
+    restoreFromSnapshot();
   };
 
-  // 取消 → 回到查看模式，重新加载保存的数据（丢弃未保存修改）
+  // 取消 → 回到查看模式，从快照恢复画布（丢弃未保存修改）
   var btnCancel = document.getElementById('btn-cancel');
   if (btnCancel) btnCancel.onclick = function () {
-    // 保存当前画布位置，loadGroupFlow 中的 render 会重置 translate
-    var tm = lf.graphModel.transformModel;
-    var savedTX = tm.TRANSLATE_X, savedTY = tm.TRANSLATE_Y;
     switchMode('view');
-    if (currentGroupId) loadGroupFlow(currentGroupId);
-    // 延迟恢复画布位置，确保 render 和 resize 已完成
-    setTimeout(function () {
-      var tm2 = lf.graphModel.transformModel;
-      tm2.TRANSLATE_X = savedTX;
-      tm2.TRANSLATE_Y = savedTY;
-      tm2.emitGraphTransform('zoom');
-    }, 200);
+    restoreFromSnapshot();
   };
 
   // 设置分组按钮（左侧底部）
@@ -1573,7 +1586,11 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
       $.ajax({
         type: 'POST', url: '/Common/Ashx/Common_Nav.ashx',
         data: { act: 'Save_Navigator_DiagramDataNew', moduleGroupId: currentGroupId, roleId: (_groupRoleMap[currentGroupId] || []).join(','), data: jsonStr },
-        success: function () { layer.msg('保存成功！', { icon: 1, time: 2000 }); },
+        success: function () {
+            // 保存成功后更新本地快照，后续模式切换将恢复到此版本
+            lastSavedSnapshot = JSON.parse(JSON.stringify(data));
+            layer.msg('保存成功！', { icon: 1, time: 2000 });
+          },
         error: function () { layer.msg('保存失败!', { icon: 1, time: 2000 }); }
       });
     });
