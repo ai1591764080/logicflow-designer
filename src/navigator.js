@@ -535,17 +535,8 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (retData && retData !== '') {
           try {
             var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
-            var savedTransform = data.transform || null;
             lf.render(data);
-            // 恢复保存的画布缩放和平移位置
-            if (savedTransform) {
-              var tm = lf.graphModel.transformModel;
-              tm.SCALE_X = savedTransform.SCALE_X;
-              tm.SCALE_Y = savedTransform.SCALE_Y;
-              tm.TRANSLATE_X = savedTransform.TRANSLATE_X;
-              tm.TRANSLATE_Y = savedTransform.TRANSLATE_Y;
-              tm.emitGraphTransform('zoom');
-            }
+            // 每次加载分组时重置缩放为 100%，不保留上次缩放状态
           } catch (e) {
             lf.render({ nodes: [], edges: [] });
           }
