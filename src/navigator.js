@@ -535,8 +535,13 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         if (retData && retData !== '') {
           try {
             var data = (typeof retData === 'string') ? JSON.parse(retData) : retData;
+            // 保存当前画布平移位置，render 后恢复（缩放已自动重置为 100%）
+            var tm = lf.graphModel.transformModel;
+            var savedTX = tm.TRANSLATE_X, savedTY = tm.TRANSLATE_Y;
             lf.render(data);
-            // 每次加载分组时重置缩放为 100%，不保留上次缩放状态
+            tm.TRANSLATE_X = savedTX;
+            tm.TRANSLATE_Y = savedTY;
+            tm.emitGraphTransform('zoom');
           } catch (e) {
             lf.render({ nodes: [], edges: [] });
           }
