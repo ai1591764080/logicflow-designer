@@ -214,20 +214,18 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
         var needsSnap = false;
 
         if (sm.isShowHorizontal) {
-            needsSnap = true;
             var topEdge = rawY - h / 2, bottomEdge = rawY + h / 2;
             var targetY = sm.position.y;
-            if (Math.abs(topEdge - targetY) < sm.epsilon) { snapY = targetY + h / 2; }
-            else if (Math.abs(bottomEdge - targetY) < sm.epsilon) { snapY = targetY - h / 2; }
-            else { snapY = targetY; }
+            if (Math.abs(topEdge - targetY) < sm.epsilon) { snapY = targetY + h / 2; needsSnap = true; }
+            else if (Math.abs(bottomEdge - targetY) < sm.epsilon) { snapY = targetY - h / 2; needsSnap = true; }
+            else if (Math.abs(rawY - targetY) < sm.epsilon) { snapY = targetY; needsSnap = true; }
         }
         if (sm.isShowVertical) {
-            needsSnap = true;
             var leftEdge = rawX - w / 2, rightEdge = rawX + w / 2;
             var targetX = sm.position.x;
-            if (Math.abs(leftEdge - targetX) < sm.epsilon) { snapX = targetX + w / 2; }
-            else if (Math.abs(rightEdge - targetX) < sm.epsilon) { snapX = targetX - w / 2; }
-            else { snapX = targetX; }
+            if (Math.abs(leftEdge - targetX) < sm.epsilon) { snapX = targetX + w / 2; needsSnap = true; }
+            else if (Math.abs(rightEdge - targetX) < sm.epsilon) { snapX = targetX - w / 2; needsSnap = true; }
+            else if (Math.abs(rawX - targetX) < sm.epsilon) { snapX = targetX; needsSnap = true; }
         }
 
         if (needsSnap && (snapX !== rawX || snapY !== rawY)) {
@@ -695,7 +693,7 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                 var fAlign = wpsComputeDisplayAlignments(fd, lf.graphModel.nodes);
                 wpsApplySnaplineVisual(fAlign);
                 lf.setNodeSnapLine(fd);
-                // 磁吸：对齐线亮起时修正假节点位置（区分中心/上下左右边缘）
+                // 磁吸：对齐线亮起时修正假节点位置（仅边缘/中心真正对齐时才触发）
                 var sm = lf.snaplineModel;
                 if (sm) {
                     var dragH = draggingNode.height, dragW = draggingNode.width;
@@ -703,28 +701,30 @@ layui.use(['layer', 'form', 'colorpicker'], function () {
                     if (sm.isShowHorizontal) {
                         var topY2 = draggingNode.y - dragH / 2;
                         var bottomY2 = draggingNode.y + dragH / 2;
-                        var snapY;
                         if (Math.abs(topY2 - sm.position.y) < sm.epsilon) {
-                            snapY = sm.position.y + dragH / 2;  // 顶部对齐
+                            var snapY = sm.position.y + dragH / 2;
+                            if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); didSnap = true; }
                         } else if (Math.abs(bottomY2 - sm.position.y) < sm.epsilon) {
-                            snapY = sm.position.y - dragH / 2;  // 底部对齐
-                        } else {
-                            snapY = sm.position.y;               // 中心对齐
+                            var snapY = sm.position.y - dragH / 2;
+                            if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); didSnap = true; }
+                        } else if (Math.abs(draggingNode.y - sm.position.y) < sm.epsilon) {
+                            var snapY = sm.position.y;
+                            if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); didSnap = true; }
                         }
-                        if (Math.abs(snapY - y) > 1) { draggingNode.moveTo(draggingNode.x, snapY); didSnap = true; }
                     }
                     if (sm.isShowVertical) {
                         var leftX2 = draggingNode.x - dragW / 2;
                         var rightX2 = draggingNode.x + dragW / 2;
-                        var snapX;
                         if (Math.abs(leftX2 - sm.position.x) < sm.epsilon) {
-                            snapX = sm.position.x + dragW / 2;  // 左侧对齐
+                            var snapX = sm.position.x + dragW / 2;
+                            if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
                         } else if (Math.abs(rightX2 - sm.position.x) < sm.epsilon) {
-                            snapX = sm.position.x - dragW / 2;  // 右侧对齐
-                        } else {
-                            snapX = sm.position.x;               // 中心对齐
+                            var snapX = sm.position.x - dragW / 2;
+                            if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
+                        } else if (Math.abs(draggingNode.x - sm.position.x) < sm.epsilon) {
+                            var snapX = sm.position.x;
+                            if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
                         }
-                        if (Math.abs(snapX - x) > 1) { draggingNode.moveTo(snapX, draggingNode.y); didSnap = true; }
                     }
                     // 咬合后刷新对齐线（仅视觉，不调 setNodeSnapLine 避免反馈循环）
                     if (didSnap) {
